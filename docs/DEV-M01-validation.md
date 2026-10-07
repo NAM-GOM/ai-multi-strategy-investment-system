@@ -1,0 +1,150 @@
+# DEV-M01 검증 기록
+
+검증 일자: **2026-10-07 (Asia/Seoul)**. Python 3.14.7 / httpx 0.28.1 / pytest 9.0.2.
+현재 구현은 주문 기능이 없는 읽기 전용 Binance Spot 클라이언트입니다.
+
+## 생성 / 수정 파일
+
+- 수정: `README.md`, `.gitignore`
+- 생성: `.python-version`, `.env.example`, `pyproject.toml`, `uv.lock`
+- 생성: `src/trading_system/__init__.py`, `config.py`, `logging_config.py`, `cli.py`
+- 생성: `src/trading_system/binance/__init__.py`, `client.py`, `public.py`, `account.py`
+- 생성: `tests/conftest.py`, `test_public_api.py`, `test_account.py`, `test_config.py`,
+  `test_errors.py`, `test_cli.py`, `test_integration.py`
+- 생성: `.github/workflows/tests.yml`, `docs/DEV-M01-validation.md`
+- 로컬 실행 산출물 (Git 제외): `.venv/`, `logs/app.log`, pytest / bytecode / ruff cache
+
+공통 GET 전용 REST Client가 인증, timeout, error, latency를 담당합니다.
+Public / Account 모듈은 응답을 Decimal 기반 모델로 변환하며 CLI는 표시와 종료 코드를 담당합니다.
+사용하는 endpoint는 모두 GET이며 `/api/v3/ticker/price`, `/api/v3/klines`,
+`/api/v3/depth`, `/api/v3/time`, `/api/v3/account`뿐입니다.
+설치 / 실행 / 환경변수 / 보안 설정은 루트 README에 있습니다.
+
+## 직접 실행 결과
+
+`uv sync --frozen --group dev` 설치 및 반복 실행에 성공했습니다.
+`uv build --out-dir /tmp/dev-m01-dist`로 sdist / wheel을 빌드했고 `uv pip check`도 통과했습니다.
+`ruff check .`, `ruff format --check .`, `git diff --check`를 통과했습니다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `pytest` | 71 passed, 6 skipped (live integration 미선택) |
+| `pytest --live-public --live-account` | 76 passed, 1 skipped (실제 계정 키 없음) |
+| `python -m trading_system.cli public` | 기본 public host에서 가격 / 캔들 / 호가 / latency 출력, exit 0 |
+| `python -m trading_system.cli account` | credentials skip 메시지, exit 0 |
+| `uv run --frozen python -m trading_system.cli all` | 공개 데이터 성공 + 계정 skip, exit 0 |
+
+2026-10-07 21:40 KST의 실제 공개 API 실행 관측값 (실시간 숫자는 계속 변합니다):
+
+```text
+BTCUSDT : 83559.90000000 USDT
+ETHUSDT : 2575.87000000 USDT
+SOLUSDT : 116.87000000 USDT
+BTCUSDT 4H candles: 10
+BTCUSDT bids / asks: 10 / 10
+best_bid: 83563.35000000
+best_ask: 83563.36000000
+spread: 0.01000000 USDT
+spread_percent: 0.00001197%
+REST Latency: 182.1 ms (application round-trip)
+Private API credentials not configured. Account check skipped.
+```
+
+이 숫자는 검증 기록이며 실행 코드에 가격을 하드코딩하지 않았습니다.
+로그에서 실제 성공·실패 endpoint / symbol / latency / program exit를 확인했습니다.
+계정 인증 성공·실패와 잔액 4종 출력은 모의 응답 테스트로 검증했습니다.
+라이브 계정 인증 성공은 확인하지 않았습니다.
+
+## Acceptance Criteria
+
+| ID | 상태 | 근거 / 남은 조건 |
+| --- | --- | --- |
+| PUBLIC-01 | PASS | API 키 없이 BTC / ETH / SOL 실제 가격 조회 |
+| PUBLIC-02 | PASS | BTCUSDT 최근 4H Candle 10개 실제 조회 |
+| PUBLIC-03 | PASS | BTCUSDT Bid / Ask 각각 10개 실제 조회 |
+| PUBLIC-04 | PASS | Order Book REST latency 출력 |
+| PRIVATE-01 | PASS | 키 미설정 시 안전하게 skip, exit 0 |
+| PRIVATE-02 | READY_FOR_LIVE_VALIDATION | 수동 GitHub Actions 구현 완료. 실제 live run 성공 전이며 PASS 아님 |
+| PRIVATE-03 | READY_FOR_LIVE_VALIDATION | 네 자산의 Decimal / 합계 / 음수 검사와 안전한 요약 준비. 실제 live run 성공 전 |
+| SECURITY-01 | PASS | 소스의 실제 API Key 없음. 테스트 fixture는 명확한 dummy 값 |
+| SECURITY-02 | PASS | 소스의 실제 Secret 없음. HMAC 테스트는 공개 RFC 4231 벡터 |
+| SECURITY-03 | PASS | `.env` Git 미추적 및 ignore 규칙 확인 |
+| SECURITY-04 | PASS | endpoint allowlist / 소스 HTTP 호출 점검: GET 5종만 존재 |
+| TEST-01 | PASS | 기본 pytest 및 실제 공개 integration 포함 실행 통과. Private skip 명시 |
+| LOG-01 | PASS | 실제 성공·실패·latency 로그 및 모의 인증 / credential redaction 검증 |
+| README-01 | PASS | pinned Python / frozen 설치 / CLI / pytest 절차를 현재 머신에서 실행 |
+
+소스·설정·문서·테스트를 대상으로 API credential 대입, Binance key 형태,
+대표적인 토큰 / private key 패턴을 값 출력 없이 점검했습니다.
+의존성 checksum과 공개 HMAC 벡터는 credential로 분류하지 않았습니다.
+검사 결과 실제 credential 의심 항목은 없었습니다. 이 점검은 패턴 기반으로 범위가 제한됩니다.
+`.env`, `.env.local`, 로그와 회전 로그, 가상환경, bytecode / pytest 캐시 ignore도 확인했습니다.
+
+## 발견된 문제와 다음 단계
+
+1. 최초 `api.binance.com` 공개 호출은 HTTP 451로 실패했고 실제 응답의 restricted location 여부를
+   확인했습니다. Binance 공식 시장 데이터 전용 호스트 `data-api.binance.vision`에서 공개 데이터
+   검증이 성공해 기본 Public host로 사용합니다. 이 호스트는 계정 인증을 제공하지 않습니다.
+2. 최초 클라우드 검증에서는 실제 `BINANCE_API_KEY` / `BINANCE_API_SECRET`이 설정되어 있지 않았습니다.
+   이후 사용자가 Repository Secrets 등록 완료를 알렸으며, 새로운 수동 workflow는 두 값을 GitHub에서
+   주입하도록 구성했습니다. Secrets 값을 열람하거나 현재 클라우드로 가져오지 않았습니다.
+   계정 endpoint는 항상 `api.binance.com`을 사용하며 지역 제한을 우회하지 않습니다.
+3. Unit Test와 패키지 빌드는 개발 준비를 검증하지만 실제 Private 인증 성공을 대신하지 않습니다.
+   키는 채팅이나 Git에 넣지 말고 안전한 로컬 `.env` / 환경변수로 설정한 후
+   `python -m trading_system.cli account`와 `pytest -m integration --live-account`를 실행하세요.
+4. 클라우드 환경 설정 초안에 `install_script`, `start_skill`, Binance 두 호스트의 네트워크 허용 목록을
+   저장했습니다. 설치 스크립트는 현재 머신에서 재실행했고 CLI 준비 절차도 검증했습니다.
+   초안 저장은 게시나 새 작업 복원 검증을 의미하지 않습니다. 재사용하려면 환경 설정을 검토·저장하고
+   환경을 게시하세요. 실제 Secret 값이나 proxy secret placeholder를 이 초안에 추가하지 않았습니다.
+5. 다음 Cycle에 진입하기 전 PRIVATE-02 / PRIVATE-03의 실제 검증을 완료하세요.
+   WebSocket / DB / Trading / Signal Engine은 DEV-M01에 포함하지 않았습니다.
+
+GitHub Actions 워크플로는 모의 응답 테스트와 lint를 수행하도록 작성했습니다.
+GitHub에서 해당 workflow가 실제 실행되어 성공했는지는 이 로컬 검증 기록에 포함하지 않습니다.
+
+## Private Account Verification 확장 — 2026-10-07
+
+변경 파일:
+
+- 추가: `.github/workflows/live-account.yml`, `tests/test_live_account_verification.py`
+- 수정: `tests/test_integration.py`, `README.md`, `docs/DEV-M01-validation.md`
+- 기존 `tests.yml`, REST Client / HMAC signing / AccountAPI / Balance / Config / 로컬 CLI는 유지
+
+새 workflow는 `workflow_dispatch`만 사용하고 권한은 `contents: read`입니다.
+checkout → setup-uv → Python 3.14.7 → `uv sync --frozen --group dev` →
+Unit Test → opt-in live account integration 순서로 실행합니다.
+Repository Secrets는 마지막 단계에서만 환경변수로 주입합니다. `.env`는 생성하지 않습니다.
+일반 push / PR CI는 Secrets나 Private API 호출을 추가하지 않았습니다.
+
+실제 호출은 기존 GET `/api/v3/time` 동기화와 서명된 GET `/api/v3/account`를 재사용합니다.
+추가 Private endpoint는 없습니다. 네 자산의 free / locked / total Decimal 모델을 검증하고
+자산 누락은 0으로 처리합니다. Actions에는 인증과 자산별 PRESENT / ZERO만 표시합니다.
+실패 시 NOT_VERIFIED, 키 미설정 시 SKIPPED를 표시합니다.
+
+앱 로그를 먼저 수집해 Secret / signature / URL / header / account JSON 패턴을 검사하며,
+노출 의심 시 원문을 폐기하고 FAIL 요약만 출력합니다. 실제 잔액 숫자, account JSON 전체,
+credential, signed URL, 헤더, traceback은 기본 Actions 출력에 넣지 않습니다.
+이 exposure check는 수집한 앱 로그와 출력 요약에 대한 검사입니다.
+HTTP 451은 `http_4xx HTTP=451`과 runner/environment 접근 불가 메시지로 구별합니다.
+나머지 BinanceError 분류를 유지하며 자동 재시도 / 지역 제한 우회는 추가하지 않았습니다.
+
+| 항목 | 현재 검증 결과 |
+| --- | --- |
+| 기본 `pytest` | 94 passed, 6 skipped (live 미선택) |
+| workflow Unit 명령 | 94 passed, 6 deselected |
+| workflow live 명령, 현재 머신 키 없음 | 6 skipped. Private 인증 성공을 뜻하지 않음 |
+| `ruff check .` / `ruff format --check .` | PASS |
+| actionlint 1.7.7, tests.yml / live-account.yml | PASS (공식 release checksum 확인 후 사용) |
+| 기존 Unit / Mock tests | 모두 PASS |
+| 새 검증 경로 | 성공 / ZERO / 자산 누락 / 오류 분류 / HTTP 451 / skip / 노출 차단 모의 검증 PASS |
+| GHA-01 / GHA-02 / GHA-03 / GHA-04 | 구성 검증 PASS. 수동 trigger, Secrets 단계 제한, 일반 CI 미변경 |
+| SECURITY-05 / SECURITY-06 | 모의 출력·노출 차단 검사 PASS. 실제 Actions run은 아직 미실행 |
+| SECURITY-07 | PASS. Private endpoint 추가 없음, Trading / Withdrawal 미구현 |
+| TEST-02 / TEST-03 / DOC-02 | PASS. Unit 통과, 명시적 live 옵션, 사용 절차 문서화 |
+| PRIVATE-02 / PRIVATE-03 | **READY_FOR_LIVE_VALIDATION**. 실제 인증·잔액 PASS 미확인 |
+
+GitHub Actions의 수동 실행 UI는 workflow 파일이 기본 브랜치(`main`)에 있어야 표시됩니다.
+현재 작업 브랜치 변경사항을 PR로 main에 병합한 뒤, README의
+**Actions → DEV-M01 Live Binance Account Check → Run workflow → dev-m01-binance-connectivity → Run workflow**
+절차로 사용자가 실행하세요. 이번 작업에서는 live workflow를 자동으로 dispatch하지 않았습니다.
+성공 run의 URL / commit / 결과를 확인한 뒤에만 PRIVATE-02 / PRIVATE-03을 PASS로 갱신하세요.

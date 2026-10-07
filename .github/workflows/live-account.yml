@@ -1,0 +1,29 @@
+name: DEV-M01 Live Binance Account Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-account-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Python
+        run: uv python install 3.14.7
+      - name: Install locked dependencies
+        run: uv sync --frozen --group dev
+      - name: Run unit tests without private credentials
+        run: uv run --frozen pytest -m 'not integration'
+      - name: Verify read-only account with safe summary
+        env:
+          BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+          BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+        # No traceback/captured payloads, CLI balance dump, shell tracing, or log artifacts.
+        run: uv run --frozen pytest -m integration --live-account -s --tb=no --show-capture=no
