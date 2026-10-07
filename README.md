@@ -171,10 +171,16 @@ PR로 `main`에 병합하세요. 병합 자체로 live workflow가 실행되지�
 2. **DEV-M01 Live Binance Account Check**
 3. **Run workflow**
 4. Branch에서 **dev-m01-binance-connectivity** 선택
-5. **Run workflow**
+5. `runner_mode` 선택: **github-hosted-diagnostic** 또는 **self-hosted**
+6. **Run workflow**
+
+기본값 `github-hosted-diagnostic`은 GitHub의 Ubuntu runner에서 **키 없이** 계정 호스트의
+공개 `/api/v3/time` 접근만 검사합니다. 인증이나 잔액을 조회하지 않습니다.
+실제 계정 검증에는 `self-hosted`를 선택해야 하며, 아래의 허용된 실행 환경 준비가 선행되어야 합니다.
 
 Workflow는 checkout → setup-uv → Python 3.14.7 설치 → frozen 의존성 설치 →
-Unit Test → 명시적 live account integration 순서로 동작합니다.
+Unit Test → **credentials 없는 계정 호스트 preflight** → 명시적 live account integration 순서로
+동작합니다. preflight가 실패하면 Secrets 주입과 계정 조회를 진행하지 않습니다.
 
 ```bash
 uv run --frozen pytest -m 'not integration'
@@ -222,6 +228,43 @@ Binance private API is not reachable from this GitHub Actions runner/environment
 `ubuntu-latest` runner에서도 Binance의 지역 / IP 제한 때문에 실패할 수 있습니다.
 실제 수동 run에서 `Authentication: PASS`, 네 자산의 상태 출력, exposure check PASS를 확인한 뒤에만
 검증 문서의 PRIVATE-02 / PRIVATE-03을 PASS로 변경하세요. 코드나 모의 테스트 성공만으로 변경하지 않습니다.
+
+### HTTP 451 원인과 실행 환경 준비
+
+기존 GitHub-hosted 계정 검증은 HTTP 451로 실패했습니다. 키 없는 공개 endpoint도
+`restricted_location`으로 거절되면 **인증 이전의 지역 / 이용 자격 접근 제한**입니다.
+키 오류 / IP 권한 오류(`-2014`, `-2015`), 서명 오류(`-1022`), timestamp 오류(`-1021`)와 다릅니다.
+응답 원문 대신 고정된 `Restriction=restricted_location` 또는 `unspecified_451`만 표시합니다.
+runner의 정확한 국가와 사용자의 이용 자격은 HTTP status만으로 추정하지 않습니다.
+
+```bash
+uv run --frozen python -m trading_system.binance.connectivity
+```
+
+이 preflight는 `.env`와 Binance credentials를 읽지 않습니다. 성공해도 Account 인증 성공을 뜻하지
+않으며, 실패 시 종료 코드 1입니다. GitHub-hosted runner의 451을 새 키 발급, recvWindow 변경,
+재시도로 해결할 수 있다는 근거는 없습니다. 시장 데이터 전용 호스트는 Account API를 제공하지 않습니다.
+
+실제 해결 경로는 **사용자와 서비스 모두 Binance 이용 자격이 있는 환경**에서 신뢰할 수 있는
+self-hosted runner를 사용하는 것입니다. 차단된 사용자의 제한을 우회할 목적으로 원격 지역을 선택하거나
+VPN / 프록시 / runner 변경을 이용하는 방식은 지원하지 않습니다.
+
+1. 이미 Binance 이용이 허용되는 환경의 Linux x64 서버 또는 개인 PC를 준비합니다.
+   별도 서버가 없다면 해당 환경에서 사용 중인 Linux PC도 가능합니다.
+2. GitHub 저장소 → **Settings → Actions → Runners → New self-hosted runner**에서
+   Linux x64를 선택하고 해당 머신에서 GitHub가 제공하는 등록 절차를 수행합니다.
+   등록 토큰은 로컬에서만 사용하고 Git이나 채팅에 넣지 않습니다.
+3. runner에 **`binance-readonly`** label을 추가하고 online 상태를 확인합니다.
+   workflow는 `[self-hosted, linux, x64, binance-readonly]`만 선택합니다.
+4. 그 머신에서 키 없는 preflight가 성공하고, 계정과 실행 환경의 이용 자격이 충족되는지 확인합니다.
+   기존 키의 IP 제한이 있다면 해당 신뢰할 수 있는 출구 IP가 허용되어 있어야 합니다.
+   이번 구현은 API Key Permission을 변경하지 않습니다.
+5. 수동 workflow에서 **self-hosted**를 선택합니다. runner가 없으면 job은 대기하므로
+   준비 전에는 기본 진단 모드를 사용하세요.
+
+현재 이 작업에서는 사용할 서버가 없다는 사용자 답변을 받았고 runner 목록 조회 API도 권한 부족
+(`Resource not accessible by integration`)으로 거절되었습니다. runner 설치·등록 완료를 주장하지 않습니다.
+실제 Account 검증은 이용 가능한 적격 머신이 준비된 뒤 수행할 수 있습니다.
 
 ## Architecture / Endpoints
 

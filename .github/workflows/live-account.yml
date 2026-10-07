@@ -2,13 +2,42 @@ name: DEV-M01 Live Binance Account Check
 
 on:
   workflow_dispatch:
+    inputs:
+      runner_mode:
+        description: Diagnose hosted access, or verify on an eligible registered self-hosted runner
+        type: choice
+        required: true
+        default: github-hosted-diagnostic
+        options:
+          - github-hosted-diagnostic
+          - self-hosted
 
 permissions:
   contents: read
 
 jobs:
-  live-account-check:
+  hosted-diagnostics:
+    if: ${{ inputs.runner_mode == 'github-hosted-diagnostic' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Python
+        run: uv python install 3.14.7
+      - name: Install locked dependencies
+        run: uv sync --frozen --group dev
+      - name: Run unit tests
+        run: uv run --frozen pytest -m 'not integration'
+      - name: Diagnose account host without credentials
+        run: uv run --frozen python -m trading_system.binance.connectivity
+
+  live-account-check:
+    if: ${{ inputs.runner_mode == 'self-hosted' }}
+    # Register a trusted runner in an environment where both user and service are eligible.
+    runs-on: [self-hosted, linux, x64, binance-readonly]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +50,8 @@ jobs:
         run: uv sync --frozen --group dev
       - name: Run unit tests without private credentials
         run: uv run --frozen pytest -m 'not integration'
+      - name: Check account host before injecting credentials
+        run: uv run --frozen python -m trading_system.binance.connectivity
       - name: Verify read-only account with safe summary
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}

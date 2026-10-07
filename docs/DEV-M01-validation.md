@@ -64,8 +64,8 @@ Private API credentials not configured. Account check skipped.
 | PUBLIC-03 | PASS | BTCUSDT Bid / Ask 각각 10개 실제 조회 |
 | PUBLIC-04 | PASS | Order Book REST latency 출력 |
 | PRIVATE-01 | PASS | 키 미설정 시 안전하게 skip, exit 0 |
-| PRIVATE-02 | READY_FOR_LIVE_VALIDATION | 수동 GitHub Actions 구현 완료. 실제 live run 성공 전이며 PASS 아님 |
-| PRIVATE-03 | READY_FOR_LIVE_VALIDATION | 네 자산의 Decimal / 합계 / 음수 검사와 안전한 요약 준비. 실제 live run 성공 전 |
+| PRIVATE-02 | BLOCKED_RUNNER_ACCESS | 실제 GitHub-hosted run에서 Account HTTP 451. 인증 PASS 아님 |
+| PRIVATE-03 | BLOCKED_RUNNER_ACCESS | 인증 접근 제한으로 실제 잔액 확인 불가. 모의 검증만 PASS |
 | SECURITY-01 | PASS | 소스의 실제 API Key 없음. 테스트 fixture는 명확한 dummy 값 |
 | SECURITY-02 | PASS | 소스의 실제 Secret 없음. HMAC 테스트는 공개 RFC 4231 벡터 |
 | SECURITY-03 | PASS | `.env` Git 미추적 및 ignore 규칙 확인 |
