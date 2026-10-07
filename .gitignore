@@ -151,6 +151,11 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
+logs/
+*.log.*
+pycache/
 .envrc
 .venv
 env/
