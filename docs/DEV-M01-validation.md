@@ -64,8 +64,8 @@ Private API credentials not configured. Account check skipped.
 | PUBLIC-03 | PASS | BTCUSDT Bid / Ask 각각 10개 실제 조회 |
 | PUBLIC-04 | PASS | Order Book REST latency 출력 |
 | PRIVATE-01 | PASS | 키 미설정 시 안전하게 skip, exit 0 |
-| PRIVATE-02 | 미검증 | 키 / Secret 미설정. 계정 호스트도 현재 클라우드에서 HTTP 451 |
-| PRIVATE-03 | 모의 검증 PASS / 실제 미검증 | USDT / BTC / ETH / SOL free / locked / total / 0 출력 테스트 통과 |
+| PRIVATE-02 | READY_FOR_LIVE_VALIDATION | 수동 GitHub Actions 구현 완료. 실제 live run 성공 전이며 PASS 아님 |
+| PRIVATE-03 | READY_FOR_LIVE_VALIDATION | 네 자산의 Decimal / 합계 / 음수 검사와 안전한 요약 준비. 실제 live run 성공 전 |
 | SECURITY-01 | PASS | 소스의 실제 API Key 없음. 테스트 fixture는 명확한 dummy 값 |
 | SECURITY-02 | PASS | 소스의 실제 Secret 없음. HMAC 테스트는 공개 RFC 4231 벡터 |
 | SECURITY-03 | PASS | `.env` Git 미추적 및 ignore 규칙 확인 |
@@ -85,9 +85,10 @@ Private API credentials not configured. Account check skipped.
 1. 최초 `api.binance.com` 공개 호출은 HTTP 451로 실패했고 실제 응답의 restricted location 여부를
    확인했습니다. Binance 공식 시장 데이터 전용 호스트 `data-api.binance.vision`에서 공개 데이터
    검증이 성공해 기본 Public host로 사용합니다. 이 호스트는 계정 인증을 제공하지 않습니다.
-2. 실제 `BINANCE_API_KEY` / `BINANCE_API_SECRET`은 설정되어 있지 않습니다. 계정 endpoint는 항상
-   `api.binance.com`을 사용하므로 PRIVATE-02 / PRIVATE-03 완료에는 Binance 사용이 허용되는
-   실행 환경에서 안전하게 주입한 read-only HMAC 키가 필요합니다. 지역 제한을 우회하지 않습니다.
+2. 최초 클라우드 검증에서는 실제 `BINANCE_API_KEY` / `BINANCE_API_SECRET`이 설정되어 있지 않았습니다.
+   이후 사용자가 Repository Secrets 등록 완료를 알렸으며, 새로운 수동 workflow는 두 값을 GitHub에서
+   주입하도록 구성했습니다. Secrets 값을 열람하거나 현재 클라우드로 가져오지 않았습니다.
+   계정 endpoint는 항상 `api.binance.com`을 사용하며 지역 제한을 우회하지 않습니다.
 3. Unit Test와 패키지 빌드는 개발 준비를 검증하지만 실제 Private 인증 성공을 대신하지 않습니다.
    키는 채팅이나 Git에 넣지 말고 안전한 로컬 `.env` / 환경변수로 설정한 후
    `python -m trading_system.cli account`와 `pytest -m integration --live-account`를 실행하세요.
@@ -100,3 +101,50 @@ Private API credentials not configured. Account check skipped.
 
 GitHub Actions 워크플로는 모의 응답 테스트와 lint를 수행하도록 작성했습니다.
 GitHub에서 해당 workflow가 실제 실행되어 성공했는지는 이 로컬 검증 기록에 포함하지 않습니다.
+
+## Private Account Verification 확장 — 2026-10-07
+
+변경 파일:
+
+- 추가: `.github/workflows/live-account.yml`, `tests/test_live_account_verification.py`
+- 수정: `tests/test_integration.py`, `README.md`, `docs/DEV-M01-validation.md`
+- 기존 `tests.yml`, REST Client / HMAC signing / AccountAPI / Balance / Config / 로컬 CLI는 유지
+
+새 workflow는 `workflow_dispatch`만 사용하고 권한은 `contents: read`입니다.
+checkout → setup-uv → Python 3.14.7 → `uv sync --frozen --group dev` →
+Unit Test → opt-in live account integration 순서로 실행합니다.
+Repository Secrets는 마지막 단계에서만 환경변수로 주입합니다. `.env`는 생성하지 않습니다.
+일반 push / PR CI는 Secrets나 Private API 호출을 추가하지 않았습니다.
+
+실제 호출은 기존 GET `/api/v3/time` 동기화와 서명된 GET `/api/v3/account`를 재사용합니다.
+추가 Private endpoint는 없습니다. 네 자산의 free / locked / total Decimal 모델을 검증하고
+자산 누락은 0으로 처리합니다. Actions에는 인증과 자산별 PRESENT / ZERO만 표시합니다.
+실패 시 NOT_VERIFIED, 키 미설정 시 SKIPPED를 표시합니다.
+
+앱 로그를 먼저 수집해 Secret / signature / URL / header / account JSON 패턴을 검사하며,
+노출 의심 시 원문을 폐기하고 FAIL 요약만 출력합니다. 실제 잔액 숫자, account JSON 전체,
+credential, signed URL, 헤더, traceback은 기본 Actions 출력에 넣지 않습니다.
+이 exposure check는 수집한 앱 로그와 출력 요약에 대한 검사입니다.
+HTTP 451은 `http_4xx HTTP=451`과 runner/environment 접근 불가 메시지로 구별합니다.
+나머지 BinanceError 분류를 유지하며 자동 재시도 / 지역 제한 우회는 추가하지 않았습니다.
+
+| 항목 | 현재 검증 결과 |
+| --- | --- |
+| 기본 `pytest` | 94 passed, 6 skipped (live 미선택) |
+| workflow Unit 명령 | 94 passed, 6 deselected |
+| workflow live 명령, 현재 머신 키 없음 | 6 skipped. Private 인증 성공을 뜻하지 않음 |
+| `ruff check .` / `ruff format --check .` | PASS |
+| actionlint 1.7.7, tests.yml / live-account.yml | PASS (공식 release checksum 확인 후 사용) |
+| 기존 Unit / Mock tests | 모두 PASS |
+| 새 검증 경로 | 성공 / ZERO / 자산 누락 / 오류 분류 / HTTP 451 / skip / 노출 차단 모의 검증 PASS |
+| GHA-01 / GHA-02 / GHA-03 / GHA-04 | 구성 검증 PASS. 수동 trigger, Secrets 단계 제한, 일반 CI 미변경 |
+| SECURITY-05 / SECURITY-06 | 모의 출력·노출 차단 검사 PASS. 실제 Actions run은 아직 미실행 |
+| SECURITY-07 | PASS. Private endpoint 추가 없음, Trading / Withdrawal 미구현 |
+| TEST-02 / TEST-03 / DOC-02 | PASS. Unit 통과, 명시적 live 옵션, 사용 절차 문서화 |
+| PRIVATE-02 / PRIVATE-03 | **READY_FOR_LIVE_VALIDATION**. 실제 인증·잔액 PASS 미확인 |
+
+GitHub Actions의 수동 실행 UI는 workflow 파일이 기본 브랜치(`main`)에 있어야 표시됩니다.
+현재 작업 브랜치 변경사항을 PR로 main에 병합한 뒤, README의
+**Actions → DEV-M01 Live Binance Account Check → Run workflow → dev-m01-binance-connectivity → Run workflow**
+절차로 사용자가 실행하세요. 이번 작업에서는 live workflow를 자동으로 dispatch하지 않았습니다.
+성공 run의 URL / commit / 결과를 확인한 뒤에만 PRIVATE-02 / PRIVATE-03을 PASS로 갱신하세요.

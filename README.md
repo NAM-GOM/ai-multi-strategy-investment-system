@@ -154,6 +154,75 @@ Account Integration Test는 `--live-account` 옵션이 있어도 Key / Secret이
 옵션이 없으면 CI에 키가 주입되어도 계정 API를 호출하지 않습니다.
 실제 요청에 실패하면 Integration Test를 실패로 보고하며 모의 결과로 대체하지 않습니다.
 
+## GitHub Actions에서 Binance Account 검증
+
+`.github/workflows/live-account.yml`은 **사용자가 수동으로 실행할 때만** 읽기 전용 계정 API를 호출합니다.
+Repository Secrets의 `BINANCE_API_KEY`, `BINANCE_API_SECRET`을 live 테스트 단계의 환경변수로만
+주입합니다. `.env` 파일은 만들지 않습니다. HMAC 유형의 **Read-only API Key**를 사용하세요.
+**Trading Permission 및 Withdrawal Permission은 필요 없습니다.**
+
+GitHub에서 workflow 파일이 기본 브랜치(`main`)에 등록되어 있어야 Actions의 수동 실행 버튼이
+표시됩니다. 현재 작업 브랜치만 push한 상태라면 먼저 `dev-m01-binance-connectivity`의 변경사항을
+PR로 `main`에 병합하세요. 병합 자체로 live workflow가 실행되지는 않습니다.
+
+그다음 다음 순서로 실행합니다.
+
+1. GitHub 저장소 → **Actions**
+2. **DEV-M01 Live Binance Account Check**
+3. **Run workflow**
+4. Branch에서 **dev-m01-binance-connectivity** 선택
+5. **Run workflow**
+
+Workflow는 checkout → setup-uv → Python 3.14.7 설치 → frozen 의존성 설치 →
+Unit Test → 명시적 live account integration 순서로 동작합니다.
+
+```bash
+uv run --frozen pytest -m 'not integration'
+uv run --frozen pytest -m integration --live-account -s --tb=no --show-capture=no
+```
+
+일반 push / PR용 `tests.yml`은 기존 Unit / Mock / Lint CI로 유지하며 Binance Secrets를 주입하지
+않습니다. 일반 pytest는 Private API를 호출하지 않습니다. live workflow에서도 `--live-public`을
+지정하지 않아 가격 / 캔들 / 호가 Integration Test는 skip합니다.
+
+실제 계정 응답은 기존 AccountAPI / Balance로 파싱합니다. USDT / BTC / ETH / SOL을 모두 포함하며,
+free / locked / total이 유한한 음수 아닌 Decimal인지, `total == free + locked`인지 검증합니다.
+응답에서 빠진 자산은 기존 동작대로 0으로 처리합니다.
+
+Actions 로그에는 다음 형식의 **상태 요약만** 표시합니다.
+
+```text
+DEV-M01 Live Account Check
+Authentication: PASS 또는 FAIL
+USDT: PRESENT 또는 ZERO
+BTC: PRESENT 또는 ZERO
+ETH: PRESENT 또는 ZERO
+SOL: PRESENT 또는 ZERO
+Private API endpoint: GET /api/v3/account
+Trading endpoints: NOT IMPLEMENTED
+Secret exposure check: PASS 또는 FAIL
+```
+
+`PRESENT`는 total > 0, `ZERO`는 total == 0을 뜻합니다. 실제 보유 수량, 계정 JSON 전체,
+Key / Secret / signature, 요청 URL / 헤더는 출력하지 않습니다. 앱 로그는 먼저 메모리에 모으고
+요약과 함께 credential / 서명 / URL / 헤더 / account JSON 노출 패턴을 검사합니다.
+검사에 실패하면 원문을 버리고 안전한 FAIL 메시지만 표시합니다. pytest traceback과 failure capture도
+workflow에서 비활성화하며 로그 파일을 artifact로 업로드하지 않습니다.
+로컬 `python -m trading_system.cli account`의 free / locked / total 숫자 출력은 유지합니다.
+
+Secrets가 없거나 한쪽만 있으면 `Authentication: SKIPPED`, 자산별 `NOT_VERIFIED`와 pytest skip을
+표시합니다. **job이 녹색이어도 skip은 PRIVATE-02 / PRIVATE-03의 PASS가 아닙니다.**
+인증 또는 잔액 검증에 실패하면 test와 job을 실패로 보고하며 안전한 오류 분류와 HTTP status를 표시합니다.
+HTTP 451에서는 다음 메시지를 추가하고 지역 제한을 우회하지 않습니다.
+
+```text
+Binance private API is not reachable from this GitHub Actions runner/environment.
+```
+
+`ubuntu-latest` runner에서도 Binance의 지역 / IP 제한 때문에 실패할 수 있습니다.
+실제 수동 run에서 `Authentication: PASS`, 네 자산의 상태 출력, exposure check PASS를 확인한 뒤에만
+검증 문서의 PRIVATE-02 / PRIVATE-03을 PASS로 변경하세요. 코드나 모의 테스트 성공만으로 변경하지 않습니다.
+
 ## Architecture / Endpoints
 
 ```text
