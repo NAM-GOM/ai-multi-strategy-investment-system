@@ -1,7 +1,7 @@
-# AI Multi-Strategy Investment System — DEV-M01
+# AI Multi-Strategy Investment System — DEV-M02
 
-**현재 버전은 주문 기능이 없는 Read-only Binance Spot Connectivity MVP입니다.**
-Python 프로그램의 공개 시장 데이터 조회와 읽기 전용 계정 인증을 검증합니다.
+**현재 버전은 주문 기능이 없는 Read-only Binance Spot 시장 데이터 수집 시스템입니다.**
+DEV-M01의 REST 조회·계정 인증을 유지하며 DEV-M02에서 공개 WebSocket 수집을 추가합니다.
 GitHub 저장소의 소스, `.python-version`, `pyproject.toml`, `uv.lock`이 구현과 환경의 기준입니다.
 Python **3.14.7**을 사용하며 프로젝트의 지원 버전은 **3.14.x**입니다.
 
@@ -13,9 +13,13 @@ Python **3.14.7**을 사용하며 프로젝트의 지원 버전은 **3.14.x**입
 - HMAC SHA-256 인증과 USDT / BTC / ETH / SOL의 free / locked / total 잔액
 - 키가 없거나 하나만 설정된 경우 계정 검증을 안전하게 건너뜀
 - Console / File 로그, 모의 HTTP 테스트, 선택적 실제 연결 테스트
+- BTC / ETH / SOL miniTicker·4H Kline Combined Stream, Decimal / UTC 이벤트 모델
+- 진행 중 / 확정 Candle 분리, 세션 내 확정 중복 방지, 제한된 메모리와 큐
+- 자동 재연결·Backoff·Jitter, 심볼별 신선도 감지, 시간 제한 CLI 모니터
 
 주문·취소·출금·이체·선물·마진·권한 변경 기능은 없습니다. 주문 함수 placeholder도 없습니다.
-WebSocket, Database, Signal Engine, 전략 실행, 백테스트, 모의 투자는 이후 Cycle의 범위입니다.
+Database, Signal Engine, 전략 실행, Portfolio Allocation, 백테스트, 모의 투자는 이후 Cycle의 범위입니다.
+DEV-M02 완료는 전략 수익성 검증이나 W04 Forward Test 완료를 의미하지 않습니다.
 CCXT나 Trading Framework는 사용하지 않습니다.
 
 ## 환경 생성 및 설치
@@ -127,6 +131,75 @@ Binance의 원문 오류 메시지나 HTTP URL·헤더·traceback은 출력하�
 HTTP 451은 해당 호스트의 접근 제한을 뜻하며 키 오류와 구별됩니다.
 지원되지 않는 지역에서 Account 접근 제한을 우회하는 기능은 구현하지 않습니다.
 
+## DEV-M02 공개 WebSocket
+
+DEV-M02 작업 브랜치는 `dev-m02-binance-websocket`입니다. `main`에 반영되기 전에는 해당
+브랜치를 checkout한 뒤 `uv sync --frozen --group dev`를 실행하세요.
+Python 3.14.7에서 확인한 **websockets 17.2**를 `pyproject.toml`과 `uv.lock`에 고정했습니다.
+
+```bash
+uv run --frozen python -m trading_system.cli stream --duration 120
+# 공개 검증 요약 JSON 저장: logs/는 실행 중 생성, 파일은 새 경로를 사용
+uv run --frozen python -m trading_system.cli stream --duration 120 --report-file logs/ws-check.json
+```
+
+API Key / Secret이나 `.env`가 필요 없으며 `stream`은 계정 설정을 읽지 않습니다.
+기존 `public`, `account`, `all` 명령의 동작은 유지합니다.
+기본 서버는 `wss://data-stream.binance.vision`이며 한 연결에서 다음을 구독합니다.
+
+```text
+btcusdt@miniTicker / ethusdt@miniTicker / solusdt@miniTicker
+btcusdt@kline_4h   / ethusdt@kline_4h   / solusdt@kline_4h
+```
+
+Combined URL은 `/stream?streams=<위 6개 스트림을 /로 연결>`입니다.
+공식 대체 서버는 아래처럼 명시적으로 선택합니다. 임의 URL과 redirect는 거절합니다.
+자동 호스트 전환이나 지역 제한 우회는 구현하지 않습니다.
+
+```bash
+uv run --frozen python -m trading_system.cli stream --duration 120 --ws-base-url wss://stream.binance.com
+```
+
+5초 간격으로 연결 상태·실제 가격·심볼별 가격/캔들 수신 수·가격 나이·캔들 상태·오류/재연결
+횟수를 출력합니다. 가격을 받기 전에는 `NOT_RECEIVED`입니다. `CONNECTED` / `HEALTHY`는
+현재 연결에서 **세 심볼의 가격과 캔들이 모두 신선한 경우**에만 표시합니다.
+`CONNECTING`, `STALE`, `RECONNECTING`, `DISCONNECTED`, `STOPPED`도 지원합니다.
+종료 후 상태는 `STOPPED`이며 `Final data fresh`는 종료 직전의 신선도를 별도로 표시합니다.
+
+- 초기 신선도 기준: 가격 **10초**, 캔들 **30초**. Binance miniTicker는 약 1초, 4H Kline도
+  약 2초마다 갱신합니다. 시간 간격 4h가 메시지 간격 4h라는 뜻은 아닙니다.
+  monotonic 수신 나이와 거래소 UTC 이벤트 나이를 함께 확인하므로 시스템 시계가 정확해야 합니다.
+  이 임계값은 초기 운영 기준이며 장기 운용 후 조정해야 합니다.
+- `k.x=false`는 최신 진행 봉으로만 보관합니다. `k.x=true`만 `CLOSED_CANDLE`로 전달합니다.
+  `(symbol, interval, open_time)` 기준으로 단조 증가 watermark를 사용해 세션 내 중복을 막습니다.
+  watermark보다 오래된 확정봉은 재발행하지 않고 잠재적 전달 손실로 명시합니다.
+- 가격은 심볼별 최신 1개로 합치며, 심볼별 진행 봉·최근 확정 봉·watermark 각 1개를 유지합니다.
+  확정봉 큐는 기본 **128개**, 라이브러리 수신 큐는 **16 프레임**, 프레임 크기는 **64 KiB**입니다.
+  CLI는 요약마다 확정 이벤트를 소비합니다. 다른 소비자는 `market.drain_closed()`를 호출해야 합니다.
+  확정봉 큐가 가득 차면 조용히 버리지 않고 `DATA_LOSS` / 실패로 종료합니다.
+  캔들 연속성 누락도 명시하며 REST backfill은 수행하지 않습니다.
+- 연결이 끊기거나 서버 `serverShutdown` 메시지가 오면 재연결합니다.
+  Backoff는 1 / 2 / 4 / 8 / 16 / 32 / 최대 60초에 Jitter를 적용합니다.
+  30초 이상 정상 유지한 연결 뒤에만 Backoff를 초기화합니다.
+  30초 연속 STALE이면 재연결하며, 재연결 중에는 기존 값이 신선해도 정상으로 취급하지 않습니다.
+- 서버 Ping에는 websockets의 자동 Pong으로 같은 payload를 응답합니다. 추가 클라이언트 Ping이나
+  subscribe 제어 메시지는 보내지 않습니다. 24시간 수명 전에 **23시간 50분**에 사전 재연결합니다.
+  Binance 제한은 제어 메시지 5개/초, 연결 시도 300회/5분/IP, 스트림 1024개/연결입니다.
+- `Ctrl+C`로 종료할 수 있습니다. 로그는 기존 회전식 `logs/app.log`에 연결·종료·재연결·수신 수·
+  무효 메시지 수·확정봉·STALE을 기록합니다. 원본 프레임이나 API credential은 기록하지 않습니다.
+
+종료 코드: 신선한 6개 스트림을 받고 손실 없이 정상 종료하면 `0`, 수신/환경 검증 실패 `1`,
+잘못된 설정 또는 보고서 파일 생성 실패 `2`, 사용자 중단 `130`입니다.
+제한 응답은 `BLOCKED_ENVIRONMENT`로 보고합니다. 반복 연결 실패로 데이터가 전혀 없는 경우도
+해당 상태로 분류하며 `error_category` / HTTP status를 함께 확인하세요.
+실패를 모의 데이터로 대체하지 않습니다. JSON 보고서는 기존 파일을 덮어쓰지 않습니다.
+
+실제 4H 마감은 2분 테스트에 없을 수 있습니다. 확정 로직의 단위 테스트 PASS와
+실제 `x=true` 관찰은 별도입니다. 세션 재시작 후의 중복 방지·영속적인 exactly-once·누락 복구는
+후속 Cycle 범위입니다. [DEV-M02 검증 기록](docs/DEV-M02-validation.md)을 확인하세요.
+
+공식 규격: [Binance Spot WebSocket Streams](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams).
+
 ## Tests
 
 ```bash
@@ -136,11 +209,13 @@ ruff check .
 ruff format --check .
 ```
 
-기본 실행은 실제 네트워크를 사용하는 6개 Integration Test를 skip합니다.
+기본 실행은 실제 네트워크를 사용하는 7개 Integration Test를 skip합니다.
 Unit Test는 `httpx.MockTransport`로 가격, 캔들, 호가, Decimal spread, latency, 환경변수,
 공개 HMAC 테스트 벡터, 서명된 실제 query 형식, 잔액, missing credential,
 HTTP / Binance / timeout / connection / redirect 오류 및 로그 유출 방지를 검증합니다.
 Unit Test의 실제 네트워크 접근은 테스트 fixture에서 차단합니다.
+DEV-M02는 파서·Decimal/UTC·중복 확정·제한된 메모리/큐·STALE·재연결/Backoff/Jitter·
+Ping/Pong·서버 종료·사전 rotation·Ctrl+C에 대응하는 취소·credential 미사용을 결정적으로 검사합니다.
 
 실제 API를 사용하는 선택적 검증:
 
@@ -148,11 +223,14 @@ Unit Test의 실제 네트워크 접근은 테스트 fixture에서 차단합니�
 pytest -m integration --live-public
 pytest -m integration --live-account
 pytest --live-public --live-account
+pytest -m integration --live-stream -s
 ```
 
 Account Integration Test는 `--live-account` 옵션이 있어도 Key / Secret이 없으면 자동 skip합니다.
 옵션이 없으면 CI에 키가 주입되어도 계정 API를 호출하지 않습니다.
 실제 요청에 실패하면 Integration Test를 실패로 보고하며 모의 결과로 대체하지 않습니다.
+WebSocket integration도 `--live-stream`을 명시했을 때만 120초간 실행합니다.
+일반 push / PR CI에는 live 옵션이나 Binance Secrets를 추가하지 않습니다.
 
 ## GitHub Actions에서 Binance Account 검증
 

@@ -10,6 +10,9 @@ from trading_system.config import Config
 def pytest_addoption(parser):
     parser.addoption("--live-public", action="store_true", help="Run real public Binance checks")
     parser.addoption("--live-account", action="store_true", help="Run real read-only account check")
+    parser.addoption(
+        "--live-stream", action="store_true", help="Run a real 120s public WebSocket check"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +23,7 @@ def protect_unit_tests(request, monkeypatch):
             pytest.fail("Unit tests must use MockTransport, not real HTTP")
 
         monkeypatch.setattr(httpx.HTTPTransport, "handle_request", no_network)
+        monkeypatch.setattr("trading_system.binance.websocket.PublicConnect", no_network)
     yield
     logger = logging.getLogger("trading_system")
     for handler in logger.handlers[:]:
