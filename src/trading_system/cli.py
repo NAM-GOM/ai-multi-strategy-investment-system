@@ -1,4 +1,4 @@
-"""python -m trading_system.cli {public,account,all}"""
+"""python -m trading_system.cli {public,account,all,stream}"""
 
 import argparse
 import logging
@@ -76,9 +76,25 @@ def run_account(client: BinanceClient) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="DEV-M01: read-only Binance Spot connectivity")
-    parser.add_argument("command", choices=("public", "account", "all"))
+    parser = argparse.ArgumentParser(description="Read-only Binance Spot REST and WebSocket data")
+    parser.add_argument("command", choices=("public", "account", "all", "stream"))
+    parser.add_argument("--duration", type=float, default=120)
+    parser.add_argument("--ws-base-url", default="wss://data-stream.binance.vision")
+    parser.add_argument("--report-file")
     args = parser.parse_args(argv)
+    if args.command == "stream":
+        # Do not load .env or account credentials for public WebSocket operation.
+        from trading_system.binance.websocket import run_stream_cli
+
+        try:
+            configure_logging()
+        except OSError:
+            print("Cannot initialize logs/app.log. Check directory permissions.")
+            return 2
+        logger.info("program start command=stream")
+        code = run_stream_cli(args.duration, args.ws_base_url, args.report_file)
+        logger.info("program exit code=%d", code)
+        return code
     try:
         config = load_config(include_credentials=args.command != "public")
         configure_logging(secrets=(config.api_key, config.api_secret))
