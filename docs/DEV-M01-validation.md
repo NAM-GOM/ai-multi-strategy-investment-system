@@ -64,8 +64,8 @@ Private API credentials not configured. Account check skipped.
 | PUBLIC-03 | PASS | BTCUSDT Bid / Ask 각각 10개 실제 조회 |
 | PUBLIC-04 | PASS | Order Book REST latency 출력 |
 | PRIVATE-01 | PASS | 키 미설정 시 안전하게 skip, exit 0 |
-| PRIVATE-02 | BLOCKED_RUNNER_ACCESS | 실제 GitHub-hosted run에서 Account HTTP 451. 인증 PASS 아님 |
-| PRIVATE-03 | BLOCKED_RUNNER_ACCESS | 인증 접근 제한으로 실제 잔액 확인 불가. 모의 검증만 PASS |
+| PRIVATE-02 | LOCAL_LIVE_PASS / GHA_BLOCKED | 사용자 제공 Windows 실검증: 인증 PASS. GitHub-hosted HTTP 451은 유지 |
+| PRIVATE-03 | LOCAL_LIVE_PASS / GHA_BLOCKED | 사용자 제공 Windows 실검증: 네 자산 파싱·Decimal·합계 PASS. Actions 실검증은 미완료 |
 | SECURITY-01 | PASS | 소스의 실제 API Key 없음. 테스트 fixture는 명확한 dummy 값 |
 | SECURITY-02 | PASS | 소스의 실제 Secret 없음. HMAC 테스트는 공개 RFC 4231 벡터 |
 | SECURITY-03 | PASS | `.env` Git 미추적 및 ignore 규칙 확인 |
@@ -201,4 +201,37 @@ runner를 설치·등록하거나 live 계정 검증에 성공했다고 보고�
 적격 환경의 Linux x64 PC도 self-hosted runner가 될 수 있습니다. 실제 머신을 준비한 뒤
 GitHub Settings → Actions → Runners에서 `binance-readonly` label로 등록하고 preflight를 통과하면,
 수동 workflow의 `self-hosted` 모드로 계정 검증을 재개할 수 있습니다.
-현재 PRIVATE-02 / PRIVATE-03은 **BLOCKED_RUNNER_ACCESS**이며 PASS가 아닙니다.
+이 진단 시점의 PRIVATE-02 / PRIVATE-03은 **BLOCKED_RUNNER_ACCESS**였습니다.
+이후 Windows 로컬 실검증 결과는 아래에 별도로 기록합니다.
+
+## Windows 로컬 실검증 결과 — 보고 접수 2026-10-08
+
+사용자가 Windows PC에 연결된 Codex에서 실행한 결과 요약을 제공했습니다.
+이 기록의 근거는 사용자 제공 보고서이며, 이 클라우드 세션에서 Windows 명령을 직접 재실행한 것은
+아닙니다. Secret이나 실제 잔액 수량을 요청·수집하지 않았습니다.
+
+| 항목 | 사용자 제공 결과 |
+| --- | --- |
+| Python | 3.14.7 |
+| Branch / Commit | `dev-m01-binance-connectivity` / `8be24eab7a7eeee8acb6bfb448f74d1e1e81eba0` |
+| Account host connectivity | PASS, exit 0 |
+| Account CLI authentication | PASS, exit 0 |
+| USDT / BTC / ETH / SOL | PRESENT / ZERO / ZERO / ZERO |
+| Decimal / total consistency | PASS |
+| Unit Test | 102 passed, 6 deselected |
+| Live account integration | 1 passed, 5 Public tests skipped |
+| Ruff check / format | PASS |
+| Error / HTTP error | 없음 |
+| Secret exposure check | PASS, 출력 및 앱 로그 검사 |
+| 로컬 Git changes | 없음. 소스·테스트·의존성·lockfile 보존 |
+| 로컬 Remaining action | 없음 |
+
+**PRIVATE-02 / PRIVATE-03: Windows 로컬 실검증 PASS (사용자 보고 기준).**
+이 결과로 해당 Windows 실행 환경에서 기존 read-only Client의 실제 HMAC 인증과 네 자산의 잔액
+파싱이 성공했음을 기록합니다. 키 없는 public 데이터 검증과 별개로 private 실검증 근거가 확보됐습니다.
+
+**GitHub Actions: 기존 GitHub-hosted HTTP 451 / BLOCKED_RUNNER_ACCESS 유지.**
+Windows 직접 실행은 GitHub-hosted 또는 self-hosted workflow의 성공을 의미하지 않습니다.
+따라서 GitHub Actions PRIVATE-02 / PRIVATE-03을 PASS로 변경하지 않습니다.
+GitHub 자동 검증을 완료하려면 적격 runner를 등록하고 실제 workflow 성공 run을 확인해야 합니다.
+현재 self-hosted workflow label은 Linux x64용이며 Windows runner 등록·실행은 검증하지 않았습니다.

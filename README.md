@@ -262,9 +262,32 @@ VPN / 프록시 / runner 변경을 이용하는 방식은 지원하지 않습니
 5. 수동 workflow에서 **self-hosted**를 선택합니다. runner가 없으면 job은 대기하므로
    준비 전에는 기본 진단 모드를 사용하세요.
 
-현재 이 작업에서는 사용할 서버가 없다는 사용자 답변을 받았고 runner 목록 조회 API도 권한 부족
-(`Resource not accessible by integration`)으로 거절되었습니다. runner 설치·등록 완료를 주장하지 않습니다.
-실제 Account 검증은 이용 가능한 적격 머신이 준비된 뒤 수행할 수 있습니다.
+클라우드 작업 당시에는 사용할 서버가 없었고 runner 목록 조회 API도 권한 부족
+(`Resource not accessible by integration`)으로 거절되었습니다. 이후 Windows 로컬 PC에서는
+사용자 보고 기준으로 실제 Account 인증과 네 자산 잔액 검증이 성공했습니다.
+GitHub runner 등록 및 workflow 인증 성공은 별도로 남아 있습니다.
+
+### Windows 로컬 실행 검증
+
+2026-10-08 접수된 사용자 보고에서 Python 3.14.7 / commit `8be24ea`로 계정 호스트 접근,
+실제 인증, 네 자산의 Decimal / total 검증, Unit 102개와 live account 1개가 통과했습니다.
+세부 근거와 GitHub-hosted 결과의 구분은 [검증 기록](docs/DEV-M01-validation.md)에 있습니다.
+
+Windows PowerShell에서도 가상환경 활성화 없이 직접 실행할 수 있습니다.
+
+```powershell
+uv python install 3.14.7
+uv sync --frozen --group dev
+uv run --frozen python -m trading_system.binance.connectivity
+# preflight 성공 및 로컬 read-only credentials 설정 후
+uv run --frozen python -m trading_system.cli account
+uv run --frozen pytest -m integration --live-account -s --tb=no --show-capture=no
+```
+
+Repository Secrets는 로컬에 자동 전달되지 않습니다. Key / Secret은 로컬 `.env` 또는 환경변수로
+안전하게 설정하고 채팅이나 Git에 넣지 않습니다. 직접 실행에는 GitHub runner 등록이 필요 없습니다.
+기존 self-hosted workflow는 Linux x64 label을 사용하므로 이 Windows 실행 결과가 Windows runner의
+workflow 지원·성공을 뜻하지는 않습니다.
 
 ## Architecture / Endpoints
 
