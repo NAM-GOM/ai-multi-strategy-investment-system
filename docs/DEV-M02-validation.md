@@ -95,6 +95,13 @@ uv run --frozen pytest -m integration --live-stream -s
 | git diff --check | PASS |
 | 실제 WebSocket CLI 120초 | **exit 0 / LIVE_PASS**, 아래 실제 수신 증거 |
 | WebSocket live pytest 함수 | opt-in 경로 구현, 기본 pytest에서 skip. 이번 라이브 증거는 CLI 실행 |
+| GitHub push / PR CI, 구현 commit `c971c86` | **SUCCESS**. frozen 설치 / pytest / Ruff check / format 모두 통과 |
+
+실제 GitHub 검증 run:
+[push 37782949874](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37782949874),
+[PR 37782971731](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37782971731).
+[초안 PR #3](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/pull/3)은 M01 브랜치 대상이며
+병합하지 않았습니다. GitHub CI의 성공은 unit/lint 검증이며 위의 클라우드 live CLI 관찰과 구분합니다.
 
 일반 push / PR CI는 live 옵션을 전달하지 않으므로 공개 WebSocket이나 Private API를 호출하지 않습니다.
 모의 테스트는 실제 HTTP·WebSocket connector를 fixture에서 차단합니다.
