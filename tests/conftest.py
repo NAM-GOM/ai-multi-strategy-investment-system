@@ -13,6 +13,9 @@ def pytest_addoption(parser):
     parser.addoption(
         "--live-stream", action="store_true", help="Run a real 120s public WebSocket check"
     )
+    parser.addoption(
+        "--live-collect", action="store_true", help="Run a real SQLite/public collection check"
+    )
 
 
 @pytest.fixture(autouse=True)

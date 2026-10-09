@@ -154,6 +154,15 @@ activemq-data/
 .env.*
 !.env.example
 logs/
+data/
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.runs.jsonl
+*.writer.lock
 *.log.*
 pycache/
 .envrc

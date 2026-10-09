@@ -110,6 +110,78 @@ class PublicAPI:
         except IndexError, KeyError, TypeError, ValueError, OverflowError, InvalidOperation:
             raise BinanceError("invalid_response", "/api/v3/klines") from None
 
+    def server_time_ms(self) -> int:
+        """Public server clock, used to prove that REST candles have completely closed."""
+        response = self.client.get("/api/v3/time")
+        try:
+            value = response.data["serverTime"]
+            if type(value) is not int or not 0 < value <= 253_402_300_799_999:
+                raise ValueError
+            return value
+        except KeyError, TypeError, ValueError:
+            raise BinanceError("invalid_response", "/api/v3/time") from None
+
+    def candles_range(
+        self, symbol: str, *, interval="4h", start_time_ms: int, end_time_ms: int, limit: int = 1000
+    ) -> tuple[Candle, ...]:
+        """Strict ranged public query; the original BTC/latest-10 candles() is unchanged."""
+        from trading_system.persistence.records import INTERVAL_MS, CandleRecord, validate_ms
+
+        if symbol not in SYMBOLS:
+            raise BinanceError("invalid_symbol", "/api/v3/klines")
+        validate_ms(start_time_ms)
+        validate_ms(end_time_ms)
+        if (
+            interval != "4h"
+            or start_time_ms % INTERVAL_MS
+            or end_time_ms < start_time_ms
+            or type(limit) is not int
+            or not 1 <= limit <= 1000
+        ):
+            raise ValueError("Invalid supported candle range.")
+        response = self.client.get(
+            "/api/v3/klines",
+            {
+                "symbol": symbol,
+                "interval": interval,
+                "startTime": start_time_ms,
+                "endTime": end_time_ms,
+                "limit": limit,
+            },
+        )
+        try:
+            if not isinstance(response.data, list) or len(response.data) > limit:
+                raise ValueError
+            result, previous = [], None
+            for row in response.data:
+                if not isinstance(row, list) or len(row) < 7:
+                    raise ValueError
+                candle = Candle(utc_time(row[0]), *(amount(v) for v in row[1:6]), utc_time(row[6]))
+                record = CandleRecord(
+                    symbol,
+                    interval,
+                    row[0],
+                    row[6],
+                    candle.open,
+                    candle.high,
+                    candle.low,
+                    candle.close,
+                    candle.volume,
+                    None,
+                    row[6] + 1,
+                    "REST_RECOVERY",
+                )
+                record.validate()
+                if not start_time_ms <= row[0] <= end_time_ms or row[6] > end_time_ms:
+                    raise ValueError
+                if previous is not None and row[0] <= previous:
+                    raise ValueError
+                previous = row[0]
+                result.append(candle)
+            return tuple(result)
+        except IndexError, KeyError, TypeError, ValueError, OverflowError, InvalidOperation:
+            raise BinanceError("invalid_response", "/api/v3/klines") from None
+
     def order_book(self) -> OrderBook:
         response = self.client.get("/api/v3/depth", {"symbol": "BTCUSDT", "limit": 10})
         try:
