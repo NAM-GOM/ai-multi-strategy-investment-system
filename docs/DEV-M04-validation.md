@@ -1,8 +1,8 @@
 # DEV-M04 validation
 
-Current classification: **DEV-M04_HOLD**. Implementation and Windows deterministic
-verification are complete; Linux CI and the new actual M04 closed-bar observation
-are pending. Technical verification never authorizes Formal W04 or strategy APPROVED.
+Current classification: **DEV-M04_HOLD**. Implementation, Windows/Linux deterministic
+verification and public smoke/restart are complete. The new actual M04 closed-bar
+observation is pending. Technical verification never authorizes Formal W04 or strategy APPROVED.
 
 ## Baseline and source audit
 
@@ -112,13 +112,30 @@ read-only market DB; immutable records; duplicate conflicts; atomic rollback;
 checkpoint corruption; persistent STOP; actual subprocess forced crash and separate
 CLI restart; existing M01/M02/M03 tests; no credential/config or order path invoked.
 
-New Windows public 600-second collector/observer smoke: **IN_PROGRESS**.
-This run occurs between real 4H closes and cannot establish OBS-12.
+GitHub CI for implementation commit `2ac688b8e685794eb488860de297f37b2992bf71`:
+[run 37933197403](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37933197403).
+Windows: 283 passed, 8 skipped in 53.96s. Linux: 283 passed, 8 skipped in 34.58s.
+Both Ruff and format PASS (52 files). Step evidence: `docs/DEV-M04-ci.json`.
+
+New Windows public 600-second collector/observer smoke: **PASS**, between real closes.
+M03 collector COMPLETED / public WS LIVE_PASS, 605.016 seconds uptime, 2,604 messages,
+144 REST_BOOTSTRAP candles, 33 price snapshots, three bootstrap gaps resolved,
+zero reconnects, **zero actual WS closed candles**. All three symbols observed.
+M04 committed nine decisions with real Frozen indicator snapshots: one
+ENTRY_CANDIDATE and eight NO_ACTION, all **PRELAUNCH_STATE_BACKFILL**. No orders,
+positions, fills or Formal W04 clock were created. A separate new observer process
+returned ALREADY_COMMITTED, retained all nine records and added zero decisions.
+Evidence and actual snapshots: `docs/DEV-M04-smoke-summary.json`.
+This smoke does not establish OBS-12 and its old candidate is not a new live signal.
 
 New actual M04 4H close: **LIVE_NOT_OBSERVED** as of this report. Target validation is
 2026-10-10 01:00 KST / 2026-10-09 16:00 UTC. The opt-in supervisor is prepared to
 capture that close and verify original WS_LIVE provenance, all nine actual snapshots,
-NO_ACTION persistence and separate-process restart. A plan is not an actual result.
+NO_ACTION persistence and separate-process restart. It is running in the background;
+the supervisor reports LIVE_NOT_OBSERVED while waiting. Results will be written to
+`data/m04-live-20261010T010000/`. A one-time thread follow-up is scheduled for
+2026-10-10 01:10 KST to inspect actual results and update this report/branch. A plan
+or active process is not an actual result.
 
 ## Acceptance gates
 
@@ -128,13 +145,13 @@ NO_ACTION persistence and separate-process restart. A plan is not an actual resu
 | OBS-02 nine-combination reproduction | PASS_WITH_EVIDENCE_FLAG above |
 | OBS-03 Frozen warmup/history | PASS offline; live continuity checked at runtime |
 | OBS-04 closed only | PASS deterministic |
-| OBS-05 provenance | PASS deterministic; public smoke pending |
+| OBS-05 provenance | PASS deterministic and public smoke |
 | OBS-06 shared barrier | PASS deterministic |
 | OBS-07 persistent decisions | PASS deterministic |
 | OBS-08 restart duplicates | PASS separate-process deterministic |
 | OBS-09 fail closed | PASS deterministic |
-| OBS-10 Windows/Linux/Ruff/format | Windows PASS; Linux NOT_TESTED until CI completes |
-| OBS-11 M01/M02/M03 regression | Windows PASS; Linux pending |
+| OBS-10 Windows/Linux/Ruff/format | PASS both OS CI, including Ruff/format |
+| OBS-11 M01/M02/M03 regression | PASS both OS CI |
 | OBS-12 actual M04 closed-bar | LIVE_NOT_OBSERVED |
 | OBS-13 no trading/paper execution | PASS |
 | OBS-14 Formal clock unchanged | PASS; M04 never accesses W04 state |
