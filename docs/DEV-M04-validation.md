@@ -128,14 +128,17 @@ returned ALREADY_COMMITTED, retained all nine records and added zero decisions.
 Evidence and actual snapshots: `docs/DEV-M04-smoke-summary.json`.
 This smoke does not establish OBS-12 and its old candidate is not a new live signal.
 
-New actual M04 4H close: **LIVE_NOT_OBSERVED** as of this report. Target validation is
-2026-10-10 01:00 KST / 2026-10-09 16:00 UTC. The opt-in supervisor is prepared to
+New actual M04 4H closes: **LIVE_NOT_OBSERVED** as of this report. At the user's
+request, targets are 2026-10-10 01:00 and 05:00 KST / 2026-10-09 16:00 and 20:00 UTC.
+Two independent opt-in supervisor processes are running, each prepared to
 capture that close and verify original WS_LIVE provenance, all nine actual snapshots,
 NO_ACTION persistence and separate-process restart. It is running in the background;
 the supervisor reports LIVE_NOT_OBSERVED while waiting. Results will be written to
-`data/m04-live-20261010T010000/`. A one-time thread follow-up is scheduled for
-2026-10-10 01:10 KST to inspect actual results and update this report/branch. A plan
-or active process is not an actual result.
+`data/m04-live-20261010T010000/` and `data/m04-live-20261010T050000/`. These are
+separate observation windows, not evidence of continuous coverage between them.
+The one-time thread follow-up was moved to 2026-10-10 05:10 KST to inspect both
+actual results, update this report/branch, and create `docs/DEV-M04-final-report-ko.md`.
+A plan or active process is not an actual result.
 
 ## Acceptance gates
 
