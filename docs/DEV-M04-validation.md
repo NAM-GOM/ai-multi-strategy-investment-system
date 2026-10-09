@@ -1,8 +1,9 @@
 # DEV-M04 validation
 
-Current classification: **DEV-M04_HOLD**. Implementation, Windows/Linux deterministic
-verification and public smoke/restart are complete. The new actual M04 closed-bar
-observation is pending. Technical verification never authorizes Formal W04 or strategy APPROVED.
+Final classification: **DEV-M04_PASS_WITH_FLAGS**. Implementation, Windows/Linux
+deterministic verification, public smoke/restart and two actual Windows closed-bar
+observations passed. Evidence flags remain below. Technical verification never
+authorizes Formal W04 or strategy APPROVED. See `docs/DEV-M04-final-report-ko.md`.
 
 ## Baseline and source audit
 
@@ -128,17 +129,36 @@ returned ALREADY_COMMITTED, retained all nine records and added zero decisions.
 Evidence and actual snapshots: `docs/DEV-M04-smoke-summary.json`.
 This smoke does not establish OBS-12 and its old candidate is not a new live signal.
 
-New actual M04 4H closes: **LIVE_NOT_OBSERVED** as of this report. At the user's
-request, targets are 2026-10-10 01:00 and 05:00 KST / 2026-10-09 16:00 and 20:00 UTC.
-Two independent opt-in supervisor processes are running, each prepared to
-capture that close and verify original WS_LIVE provenance, all nine actual snapshots,
-NO_ACTION persistence and separate-process restart. It is running in the background;
-the supervisor reports LIVE_NOT_OBSERVED while waiting. Results will be written to
-`data/m04-live-20261010T010000/` and `data/m04-live-20261010T050000/`. These are
-separate observation windows, not evidence of continuous coverage between them.
-The one-time thread follow-up was moved to 2026-10-10 05:10 KST to inspect both
-actual results, update this report/branch, and create `docs/DEV-M04-final-report-ko.md`.
-A plan or active process is not an actual result.
+Actual Windows M04 4H closes: **PASS**, at 2026-10-10 01:00 and 05:00 KST /
+2026-10-09 16:00 and 20:00 UTC. Each collector received three genuine closed WS
+candles, saved three WS_LIVE rows, and completed with no conflict or pending candle.
+Each observer committed all nine LIVE_OBSERVATION decisions atomically. Both
+market DBs have 162 REST_BOOTSTRAP + 3 WS_LIVE candles and no missing/invalid row
+or unresolved gap as of their actual completion. Frozen history joins continuously.
+
+| Close KST | Collector WS uptime | Messages | Live decisions | NO_ACTION | Other candidate | Restart added |
+|---|---:|---:|---:|---:|---|---:|
+| 01:00 | 1025.017s | 4419 | 9 | 8 | T3 ETH EXIT_CANDIDATE | 0 |
+| 05:00 | 1025.019s | 4195 | 9 | 8 | T3 ETH ENTRY_CANDIDATE | 0 |
+
+Independent read-only post-run audit recalculated all 18 live indicator snapshots
+and input/decision hashes from original market rows and matched exactly. Each DB
+has 18 total decisions: nine prelaunch + nine live. Nine latest checkpoints and
+one complete live batch per DB passed recovery/hash checks. Different observer
+and restart PIDs were confirmed; original DB, reports and log file hashes stayed
+unchanged. No formal classification, order, position, fill or forward PnL was created.
+
+Raw evidence remains in `data/m04-live-20261010T010000/` and
+`data/m04-live-20261010T050000/`. Checked-in independent results and all 18 snapshots
+are in `docs/DEV-M04-overnight-audit.json`; audit command:
+`python tools/audit_dev_m04_overnight.py`. These are separate observation windows,
+not continuous coverage between 01:07 and 04:50. Fixed-window completeness is
+checked as of actual completion, not as of later candle deadlines.
+
+Latest overnight execution/CI commit: `9985e2c999185d4793612bc0edb4552f57c62d12`.
+[CI 37936170401](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37936170401):
+Linux 283 passed / 8 skipped (30.44s), Windows 283 passed / 8 skipped (35.00s);
+Ruff and format PASS on both. Evidence: `docs/DEV-M04-overnight-ci.json`.
 
 ## Acceptance gates
 
@@ -146,19 +166,21 @@ A plan or active process is not an actual result.
 |---|---|
 | OBS-01 source/config | PASS |
 | OBS-02 nine-combination reproduction | PASS_WITH_EVIDENCE_FLAG above |
-| OBS-03 Frozen warmup/history | PASS offline; live continuity checked at runtime |
+| OBS-03 Frozen warmup/history | PASS offline and both live windows |
 | OBS-04 closed only | PASS deterministic |
-| OBS-05 provenance | PASS deterministic and public smoke |
+| OBS-05 provenance | PASS deterministic, smoke and both live windows |
 | OBS-06 shared barrier | PASS deterministic |
 | OBS-07 persistent decisions | PASS deterministic |
 | OBS-08 restart duplicates | PASS separate-process deterministic |
 | OBS-09 fail closed | PASS deterministic |
 | OBS-10 Windows/Linux/Ruff/format | PASS both OS CI, including Ruff/format |
 | OBS-11 M01/M02/M03 regression | PASS both OS CI |
-| OBS-12 actual M04 closed-bar | LIVE_NOT_OBSERVED |
+| OBS-12 actual M04 closed-bar | PASS two real closes and independent replay |
 | OBS-13 no trading/paper execution | PASS |
 | OBS-14 Formal clock unchanged | PASS; M04 never accesses W04 state |
 
-Final PASS classification requires actual results for the pending gates. No claims
-about unobserved network duplicates, old event causes, complete independent W03
-indicator dumps or Formal W04 performance are added.
+All required technical/observation gates have actual evidence. Flags: no supplied
+independent full-bar W03 indicator dump; actual duplicate close delivery by the
+network was not observed (zero duplicate_closures in both runs); two windows do
+not establish continuous coverage between them. The old M03 event cause remains
+unproven. No claim of Formal W04 performance or Preflight authorization is added.

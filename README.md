@@ -520,6 +520,13 @@ The frozen M03 parent is `1b1bf582f34a526d9204a084dc4573c79efa124e`.
 See [M04 validation](docs/DEV-M04-validation.md) and
 [M03 freeze review](docs/DEV-M03-freeze-review.md) for actual and pending results.
 
+Final result: **DEV-M04_PASS_WITH_FLAGS**. Both 2026-10-10 01:00 and 05:00 KST
+real closes passed with nine LIVE decisions each, exact offline snapshot/hash
+replay, and zero new decisions after process restart. See the
+[Korean final report](docs/DEV-M04-final-report-ko.md) and
+[independent overnight audit](docs/DEV-M04-overnight-audit.json).
+These are two separate observation windows; Formal W04 remains unstarted.
+
 Run from the repository checkout with Python 3.14.7:
 
 ```sh
