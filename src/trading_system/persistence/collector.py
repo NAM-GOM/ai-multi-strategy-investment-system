@@ -95,6 +95,13 @@ class Collector:
             for event in prices:
                 self.snapshot_buckets[event.symbol] = bucket
 
+    async def _flush_final(self, writer):
+        # Reception has stopped. Drain the bounded queue in committed batches, including
+        # a backlog larger than one batch; a failed batch stays pending and aborts shutdown.
+        await self._flush(writer, final=True)
+        while self.monitor.market.closed_events:
+            await self._flush(writer, final=True)
+
     def _summary(self, monitor):
         snapshot = monitor.snapshot()
         print(
@@ -152,7 +159,7 @@ class Collector:
                         await task
                 result = await task
                 # Final closed events commit before ACK, then cover any last close boundary.
-                await self._flush(writer, final=True)
+                await self._flush_final(writer)
                 await self._recover(writer)
             except asyncio.CancelledError:
                 self.interrupted = True
@@ -163,7 +170,7 @@ class Collector:
                     await asyncio.gather(task, return_exceptions=True)
                 # All already submitted writes finish; closed queue remains until a final commit.
                 try:
-                    await self._flush(writer, final=True)
+                    await self._flush_final(writer)
                 except PersistenceError:
                     self.persistence_failed = True
                     self.error_category = "persistence_failure"
@@ -196,6 +203,7 @@ class Collector:
                     and not self.monitor.fatal_error
                     and self.recovery_status == "COMPLETE"
                     and not self.conflicts
+                    and not self.monitor.market.closed_events
                     and self.counters["price_snapshots_written"] > 0
                     else "INCOMPLETE"
                 )

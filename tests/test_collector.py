@@ -12,6 +12,7 @@ from trading_system.persistence.collector import Collector
 from trading_system.persistence.config import PersistenceConfig
 from trading_system.persistence.records import INTERVAL_MS, epoch_ms
 from trading_system.persistence.repository import MarketRepository
+from trading_system.persistence.store import PersistenceError
 from trading_system.persistence.writer import AsyncWriter
 
 
@@ -183,6 +184,55 @@ def test_collection_cancel_graceful_and_run_interrupted(tmp_path):
             assert repository.runs()[0]["status"] == "INTERRUPTED"
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "fail_second_batch", [False, True], ids=["commit-all", "second-batch-fails"]
+)
+def test_shutdown_backlog_larger_than_one_batch(tmp_path, monkeypatch, fail_second_batch):
+    monitor, clock, _ = monitor_fixture()
+    original_run = monitor.run
+
+    async def run_with_final_backlog(*args, **kwargs):
+        result = await original_run(*args, **kwargs)
+        for index in range(32, 0, -1):
+            for symbol in SYMBOLS:
+                monitor.market.apply(
+                    event(candle_payload(symbol, start=START - index * INTERVAL_MS, closed=True))
+                )
+        assert len(monitor.market.closed_events) == 96
+        return result
+
+    monkeypatch.setattr(monitor, "run", run_with_final_backlog)
+
+    class BatchWriter(AsyncWriter):
+        closed_batches = 0
+
+        async def flush(self, market, *args, **kwargs):
+            if market.closed_events:
+                self.closed_batches += 1
+                if fail_second_batch and self.closed_batches == 2:
+                    raise PersistenceError()
+            return await super().flush(market, *args, **kwargs)
+
+    path = tmp_path / "backlog.sqlite"
+    result = asyncio.run(
+        Collector(
+            PersistenceConfig(db_path=path),
+            monitor=monitor,
+            recovery=successful_recovery,
+            writer_factory=BatchWriter,
+            clock_ms=lambda: epoch_ms(clock.utc_now()),
+            tick_seconds=0.001,
+        ).run(5)
+    )
+    assert result["status"] == ("PERSISTENCE_FAILURE" if fail_second_batch else "COMPLETED")
+    assert result["pending_closed"] == (32 if fail_second_batch else 0)
+    with MarketRepository(path) as repository:
+        assert repository.runs()[0]["status"] == result["status"]
+        assert sum(len(repository.candles(s, 0, START)) for s in SYMBOLS) == (
+            67 if fail_second_batch else 96
+        )
 
 
 def test_database_cli_no_account_configuration_and_secret_output(tmp_path, monkeypatch, capsys):
