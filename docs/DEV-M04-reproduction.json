@@ -1,0 +1,168 @@
+{
+  "verification_status": "W03_REPRODUCTION_PASS",
+  "manifest_hash": "8508a1bd15d68b04fe0428c298330961859af88a9a26d565d23fcdf1d93bd38c",
+  "source_hash": "0850fcc32356a4275e0795cece08a6f6d701220b941ce94e2b95dd1ce802a965",
+  "parameter_hash": "6a7ce60ed2199cc432cbd98733e3b72f4d926e7120cbc5e69d224b6d9fd0863b",
+  "baseline_hash": "faa1492c637dd155c08c30c755359a52b2cf1e14f0c20d46b1e14c90f21993b2",
+  "market_data_commit": "1b1bf582f34a526d9204a084dc4573c79efa124e",
+  "versions": {
+    "trend_ma_v0.1": "v0.1",
+    "trend_donchian_v0.1": "v0.1",
+    "trend_tsmom_v0.1": "v0.1"
+  },
+  "files_verified": 26,
+  "data_hashes": {
+    "BTCUSDT": "f4ddf0ec4354fe66f2635887a809e433962877b9b090a728a02d3721a0183059",
+    "ETHUSDT": "f0cda00c5f062f947c0175c911b8afb521a62d38d04d3f45c220a56d3e7002bb",
+    "SOLUSDT": "fe428dcdce137be444ab38f2c497651455173b4bbcbc2a5cdc75e386e1265187"
+  },
+  "w03_classifications": {
+    "T1": "W03_PASS_WITH_FLAGS",
+    "T2": "W03_HOLD",
+    "T3": "W03_HOLD"
+  },
+  "formal_w04_started": false,
+  "combinations": [
+    {
+      "strategy_id": "trend_ma_v0.1",
+      "symbol": "BTCUSDT",
+      "bars": 13460,
+      "entry_conditions": 32,
+      "exit_conditions": 31,
+      "completed_reference_trades": 32,
+      "warmup_bars_from_frozen_source": 201,
+      "signal_hash": "801b0e65de94d480e1f969d349784ca6b043cd1cc33ceea034aecf94967eac88",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_ma_v0.1",
+      "symbol": "ETHUSDT",
+      "bars": 13460,
+      "entry_conditions": 37,
+      "exit_conditions": 36,
+      "completed_reference_trades": 37,
+      "warmup_bars_from_frozen_source": 201,
+      "signal_hash": "c9cb1c20282618638566fa6380cacb3218c5c4d355dbae5f74f4509fb6ecb481",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_ma_v0.1",
+      "symbol": "SOLUSDT",
+      "bars": 13460,
+      "entry_conditions": 36,
+      "exit_conditions": 35,
+      "completed_reference_trades": 36,
+      "warmup_bars_from_frozen_source": 201,
+      "signal_hash": "65b91a9e50bba35253857cc268eb204f66a390e56dee90471b20666bfa7ded6c",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_donchian_v0.1",
+      "symbol": "BTCUSDT",
+      "bars": 13460,
+      "entry_conditions": 439,
+      "exit_conditions": 500,
+      "completed_reference_trades": 87,
+      "warmup_bars_from_frozen_source": 56,
+      "signal_hash": "9fd928d769fc64726ba141dc44d1c614d2c6642d3138c570537f2887b5d479e7",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_donchian_v0.1",
+      "symbol": "ETHUSDT",
+      "bars": 13460,
+      "entry_conditions": 444,
+      "exit_conditions": 493,
+      "completed_reference_trades": 99,
+      "warmup_bars_from_frozen_source": 56,
+      "signal_hash": "e69258fb80b3ebbb9a8a32fccc2baf20dd77730b58ce98a26b24150cd7280d99",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_donchian_v0.1",
+      "symbol": "SOLUSDT",
+      "bars": 13460,
+      "entry_conditions": 460,
+      "exit_conditions": 579,
+      "completed_reference_trades": 91,
+      "warmup_bars_from_frozen_source": 56,
+      "signal_hash": "6ccb9b8f1ae588b5f6687a1fffed8cc262d3e855b86671b8e82e2ac53bef924a",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_tsmom_v0.1",
+      "symbol": "BTCUSDT",
+      "bars": 13460,
+      "entry_conditions": 198,
+      "exit_conditions": 197,
+      "completed_reference_trades": 198,
+      "warmup_bars_from_frozen_source": 182,
+      "signal_hash": "6365517cc132b430e80df0dd4b5effd89c17ffca212f50999545ec8bee3727e0",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_tsmom_v0.1",
+      "symbol": "ETHUSDT",
+      "bars": 13460,
+      "entry_conditions": 204,
+      "exit_conditions": 203,
+      "completed_reference_trades": 204,
+      "warmup_bars_from_frozen_source": 182,
+      "signal_hash": "40eeb2a5b179d0bb12c9a396a97f536fac90a27991658e481ef516cdc4d2126f",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    },
+    {
+      "strategy_id": "trend_tsmom_v0.1",
+      "symbol": "SOLUSDT",
+      "bars": 13460,
+      "entry_conditions": 200,
+      "exit_conditions": 200,
+      "completed_reference_trades": 199,
+      "warmup_bars_from_frozen_source": 182,
+      "signal_hash": "7078f7f797a8892695cdcbaab44d3fa89d7fc663756420f4b1389a3d30967b54",
+      "indicator_prefix_exact": true,
+      "position_stop_timing_basis": "EXACT_FROZEN_ENGINE_LEDGER_AND_EQUITY_PARITY"
+    }
+  ],
+  "checks": [
+    {
+      "strategy_id": "trend_ma_v0.1",
+      "artifact": "trade_ledger.csv",
+      "matched": true
+    },
+    {
+      "strategy_id": "trend_ma_v0.1",
+      "artifact": "equity_curve.csv",
+      "matched": true
+    },
+    {
+      "strategy_id": "trend_donchian_v0.1",
+      "artifact": "trade_ledger.csv",
+      "matched": true
+    },
+    {
+      "strategy_id": "trend_donchian_v0.1",
+      "artifact": "equity_curve.csv",
+      "matched": true
+    },
+    {
+      "strategy_id": "trend_tsmom_v0.1",
+      "artifact": "trade_ledger.csv",
+      "matched": true
+    },
+    {
+      "strategy_id": "trend_tsmom_v0.1",
+      "artifact": "equity_curve.csv",
+      "matched": true
+    }
+  ],
+  "indicator_reference_scope": "Original engine entry ATR/stop ledger + exact source/prefix parity; no independent full-bar W03 indicator dump exists"
+}

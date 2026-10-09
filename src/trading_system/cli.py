@@ -90,6 +90,10 @@ def main(argv: list[str] | None = None) -> int:
             "db-verify",
             "db-backup",
             "db-restore",
+            "strategy-audit",
+            "strategy-replay",
+            "observe",
+            "observer-status",
         ),
     )
     parser.add_argument("--duration", type=float)
@@ -101,7 +105,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retention-days", type=int, default=30)
     parser.add_argument("--recovery-max-days", type=int, default=365)
     parser.add_argument("--backup-path")
+    parser.add_argument("--observer-db", default="data/observer.sqlite")
+    parser.add_argument("--start-ms", type=int)
+    parser.add_argument("--end-ms", type=int)
     args = parser.parse_args(argv)
+    if args.command in ("strategy-audit", "strategy-replay", "observe", "observer-status"):
+        from trading_system.observer.cli import run_observer_cli
+
+        return run_observer_cli(args)
     if args.command in ("db-init", "collect", "db-status", "db-verify", "db-backup", "db-restore"):
         from trading_system.persistence.cli import run_database_cli
 

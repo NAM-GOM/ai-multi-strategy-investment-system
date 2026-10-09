@@ -1,0 +1,61 @@
+{
+  "spec_library_id": "libfile_c6bc793da854819185e41b3e9b33e442",
+  "method": "HISTORICAL_TEMPORAL_ROBUSTNESS",
+  "start": "2020-09-13 16:00:00+00:00",
+  "end": "2026-10-02 12:00:00+00:00",
+  "initial_equity": 100000,
+  "risk_per_trade": 0.005,
+  "asset_cap": 0.333,
+  "atr_period": 20,
+  "stop_multiplier": 3,
+  "strategy_parameters": {
+    "T1": [
+      50,
+      200
+    ],
+    "T2": [
+      55,
+      20
+    ],
+    "T3": [
+      180
+    ]
+  },
+  "rolling_months": 18,
+  "rolling_step_months": 6,
+  "forward_years": 1,
+  "minimum_descriptive_trades": 10,
+  "normal_trades": 20,
+  "rolling_pass": 0.7,
+  "forward_pass": 0.6,
+  "cost_scenarios": {
+    "A": [
+      10,
+      5
+    ],
+    "B": [
+      10,
+      10
+    ],
+    "C": [
+      20,
+      20
+    ]
+  },
+  "regime_return_bars": 540,
+  "direction_thresholds": [
+    -0.2,
+    0.2
+  ],
+  "rv_bars": 180,
+  "rv_distribution_bars": 2190,
+  "rv_quantile": 0.75,
+  "routing_precedence": "INVALID > HARD_REJECT > EXPLICIT_HOLD > PASS_WITH_FLAGS",
+  "undefined_pf_policy": "NULL; cannot establish positive fold",
+  "recent_fold_trade_union": "union of per-fold completed trades; exclude crossing folds",
+  "forward_aggregate_trade_policy": "completed inside entire forward span, internal crossings included",
+  "full_year_remaining_return": "compound returns of remaining full years",
+  "vol_threshold_policy": "previous 365 days excluding assessed prior RV",
+  "no_downloads": true,
+  "no_optimization": true
+}

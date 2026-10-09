@@ -1,0 +1,3 @@
+# Frozen hashes are hashes of original bytes, including historical transport newlines.
+artifacts/w03/** -text
+src/trading_system/observer/frozen/** -text

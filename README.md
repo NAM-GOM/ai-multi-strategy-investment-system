@@ -509,3 +509,68 @@ REST 규격의 기준은 [Binance 공식 Spot API 문서](https://github.com/bin
 - 각 클라우드 작업은 격리되어 있으므로 기존 checkout을 사용하고 별도 Git worktree를 만들지 않습니다.
 
 검증 결과와 남은 조건은 [DEV-M01 검증 기록](docs/DEV-M01-validation.md)에 정리합니다.
+# DEV-M04 Strategy Signal Observer
+
+DEV-M04 reuses the byte-preserved W03 strategies and their original initialization
+wrapper. It records conditions from confirmed BTC/ETH/SOL 4H candles. It does not
+start Formal W04, change strategy approvals or positions, submit orders, create
+forward fills, or start forward PnL. T2/T3 remain W03_HOLD.
+
+The frozen M03 parent is `1b1bf582f34a526d9204a084dc4573c79efa124e`.
+See [M04 validation](docs/DEV-M04-validation.md) and
+[M03 freeze review](docs/DEV-M03-freeze-review.md) for actual and pending results.
+
+Run from the repository checkout with Python 3.14.7:
+
+```sh
+uv sync --frozen --group dev
+uv run --frozen python -m trading_system.cli strategy-audit
+uv run --frozen python -m trading_system.cli db-init
+uv run --frozen python -m trading_system.cli strategy-replay --start-ms 1790928000000 --end-ms 1790928000000
+uv run --frozen python -m trading_system.cli observe --duration 600
+uv run --frozen python -m trading_system.cli observer-status
+```
+
+Audit and replay are offline. The default replay range is the complete Frozen W03
+evaluation interval; the example records only its last batch. Replay generates
+historical condition records, never live Paper performance. Frozen files live in
+`artifacts/w03` and `src/trading_system/observer/frozen`; their exact bytes are
+protected by `.gitattributes` and hashes. pandas/numpy match W03 exactly. Their
+formatting is excluded from Ruff to preserve source bytes.
+
+The Observer opens `data/market_data.sqlite` through M03 MarketRepository in read-only
+mode. A separate M03 Collector must maintain it. The Frozen initialization history
+is joined to **all** post-freeze market candles, with no missing interval. A rolling
+7-day bootstrap eventually omits the boundary; use a bootstrap that reaches
+2026-10-02 12:00 UTC or retain the existing continuous DB. The Observer does not
+download or write market data. Missing history or any failed symbol blocks the
+whole nine-decision batch.
+
+`data/observer.sqlite` contains append-only manifests, batch decisions and health
+events, atomic checkpoints and run records. `--observer-db` selects an independent
+observer instance. A persistent rule/persistence STOP requires a new audited
+observer DB while preserving the old evidence. A single CLI writer lease prevents
+overlapping observer processes. Restarts verify stored hashes and retain each
+decision's original observation classification. `observer-status` is read-only.
+
+Research freeze: `2026-10-02T12:00:00Z`. Frozen bars are SEEN_HISTORICAL_DATA;
+post-freeze REST and already-ended WS bars are PRELAUNCH_STATE_BACKFILL. Only new
+WS closes observed after this process started can be LIVE_OBSERVATION. After a
+DATA_HOLD, recovered old bars remain state backfill. FORMAL_W04_ELIGIBLE is reserved
+for the separate verified W04 system; M04 does not issue that classification.
+Candidate booleans are not position-aware executable orders. Frozen stops, capital
+allocation, next-open execution, observed quotes and Gate F belong to W04; their
+historical behavior is checked through exact original engine parity.
+
+An opt-in Windows live supervisor is available:
+
+```sh
+uv run --frozen python tools/verify_dev_m04_live.py --target-close-ms 1791561600000 --output data/m04-live-20261010T010000
+```
+
+It waits for the specified future real 4H close, runs the public M03 collector and
+M04 observer in separate processes, checks all nine durable decisions, and launches
+a new observer process to test duplicate prevention. It requests temporary Windows
+sleep prevention and restores it on exit. A scheduled target is a validation plan,
+not a Formal W04 start or evidence of a received candle. If the close is not received,
+the report remains LIVE_NOT_OBSERVED or records failure.

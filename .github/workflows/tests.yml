@@ -1,4 +1,4 @@
-name: DEV-M01 tests
+name: DEV-M01-M04 regression tests
 on:
   push:
   pull_request:
