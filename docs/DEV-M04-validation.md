@@ -1,60 +1,89 @@
-# DEV-M04 validation
+# DEV-M04 검증 보고서 — 재검증본
 
-Final classification: **DEV-M04_PASS_WITH_FLAGS**. Implementation, Windows/Linux
-deterministic verification, public smoke/restart and two actual Windows closed-bar
-observations passed. Evidence flags remain below. Technical verification never
-authorizes Formal W04 or strategy APPROVED. See `docs/DEV-M04-final-report-ko.md`.
+재작성일: **2026-10-10 KST**. 저장소: `NAM-GOM/ai-multi-strategy-investment-system`.
+브랜치: `dev-m04-strategy-observer`.
 
-## Baseline and source audit
+최종 기술 분류는 **DEV-M04_PASS_WITH_FLAGS**다. 01:00·05:00 KST의 실제 마감에서
+BTC/ETH/SOL 확정봉과 9개 Frozen 결정을 각각 영구 저장했다. 이번 읽기 전용 재감사에서도
+18개 실시간 indicator snapshot·입력 해시·결정 해시가 정확히 일치했다.
+두 새 프로세스 재시작의 추가 결정은 0개다. Windows/Linux CI 및 Ruff/Format은 통과했다.
 
-Reviewed M03 fixes were committed and fast-forward pushed to
-`dev-m03-sqlite-market-data`: `1b1bf582f34a526d9204a084dc4573c79efa124e`.
-M04 was created from that exact commit on `dev-m04-strategy-observer`, in an
-independent checkout. Main and earlier M01/M02/M03 history were preserved.
+독립적인 W03 전체 봉 지표/boolean 덤프 부재, 실제 네트워크 중복 마감 미관찰,
+두 구간 사이 연속 관찰 부재를 검증 한계로 유지한다. 이 기술 판정은 W04 Preflight PASS,
+전략 APPROVED 또는 Formal Paper 시작 승인이 아니다.
 
-M03 genuine 2026-10-09 17:00 KST evidence remains historical M03 evidence. It is not
-an M04 live pass. Its network duplicate-close test remains NOT_TESTED; captured real
-payload replay passed. The exact historical 12:47 BTC cause remains unproven.
-Fresh M03 freeze validation: 245 passed, 8 skipped; Ruff/format PASS. An additional
-review fixed zero-new-write restarts that already had committed price receipts.
+## 1. 기준 커밋과 재검증 범위
 
-Frozen package SHA256:
-`2ad1bca4fcd1a0694bd39bafff3d3f6b93beccc3f7237b0376a73e030f9ad155`.
-Strategy source SHA256:
-`0850fcc32356a4275e0795cece08a6f6d701220b941ce94e2b95dd1ce802a965`.
-W03 parameter/config SHA256:
-`6a7ce60ed2199cc432cbd98733e3b72f4d926e7120cbc5e69d224b6d9fd0863b`.
-
-The byte-preserved source, config, historical CSV, original reference ledgers/equity
-curves and manifests are committed under `artifacts/w03` and the Frozen module.
-`artifacts/w03/lock.json` maps original paths and records every hash; its own byte
-hash is pinned in audit.py. Runtime parameter and dependency versions are also checked.
-Data SHA256 values:
-
-| Symbol | SHA256 |
+| 구분 | Commit SHA |
 |---|---|
-| BTC | f4ddf0ec4354fe66f2635887a809e433962877b9b090a728a02d3721a0183059 |
-| ETH | f0cda00c5f062f947c0175c911b8afb521a62d38d04d3f45c220a56d3e7002bb |
-| SOL | fe428dcdce137be444ab38f2c497651455173b4bbcbc2a5cdc75e386e1265187 |
+| M03 최종 동결·원격 반영·M04 분기 기준 | `1b1bf582f34a526d9204a084dc4573c79efa124e` |
+| M04 최초 구현 | `2ac688b8e685794eb488860de297f37b2992bf71` |
+| 실제 야간 관찰 실행 및 당시 두 OS CI | `9985e2c999185d4793612bc0edb4552f57c62d12` |
+| 이번 재검증 기준 HEAD·최종 감사 도구 CI | `11bfffbdfb529f3da8ac11ebd49fb1ed81c23725` |
 
-## Actual offline reproduction
+이번 변경은 보고서와 검증 요약에 한정한다. Frozen 규칙, 구현 소스, 시장 DB,
+main/M03 이력, 전략 상태와 W04 Clock은 변경하지 않는다. 재작성 보고서의 게시 커밋은
+위 기준 HEAD의 후속 커밋이며 Git 이력과 최종 전달 링크로 식별한다.
 
-Original strategy versions are `0.1` (manifest labels `v0.1`). EMA50/200 crossover,
-Donchian55/20 excluding current bar, Momentum180 zero transitions and Wilder-style
-ATR20 EWM are reused without edits. `cycle.generate_segments` preserves masking of
-the first 201/56/182 rows and its indicator initialization rules. Historical common
-initialization starts at 2020-08-11 04:00 UTC; evaluation starts at
-2020-09-13 16:00 UTC and ends at the 2026-10-02 08:00 UTC open (12:00 UTC close).
+새 마감을 이번 재작성 시각에 관찰한 것은 아니다. 기존 01시·05시의 DB와
+result/collector/observer/restart JSON을 다시 읽고 검증했다.
 
-Original shared-capital engine replay matches all three Frozen trade ledgers and
-equity curves exactly after CR/LF transport normalization. All numeric strings,
-timestamps, order, signal-time fields, stop initialization and position accounting
-remain equal. No new numerical tolerance was introduced. W03's engine verifies
-next-open entry/exit, signal ATR stops, fees 10bps, model slippage 5bps, risk .005,
-asset cap .333, long-only/no-pyramiding behavior. This engine is called only in
-offline historical verification; live signal evaluation never invokes that engine.
+| 증거 유형 | 근거 | 판정 범위 |
+|---|---|---|
+| 역사 재현 | [재현 JSON](DEV-M04-reproduction.json), `artifacts/w03` | Frozen 원본·원장·자본 곡선 일치 |
+| 결정적·회귀 검사 | `tests/test_observer.py` 및 기존 M01/M02/M03 테스트 | 정상·오류·충돌·강제 종료 시 동작 |
+| 실제 Windows 마감 | 두 live 폴더의 원본 DB·실행 JSON | WS 확정봉·동일 봉 9개 저장·재시작 |
+| 이번 읽기 전용 재감사 | [야간 감사 JSON](DEV-M04-overnight-audit.json) | 원본 보존·지표·입력/결정 hash 재계산 |
+| 기준 HEAD 두 OS CI | [CI 요약](DEV-M04-report-ci.json) | Windows/Linux pytest·Ruff·Format |
 
-| Strategy | Symbol | Entry booleans | Exit booleans | Original ledger trades incl. terminal |
+## 2. M03 선행 조건
+
+M03의 로컬 수정과 실제 2026-10-09 17:00 KST 마감 결과를 검토했다. 기존 가격 receipt가
+저장된 재시작에서 신규 쓰기 0개를 실패로 오인하는 문제를 추가 수정했다.
+동결 당시 **245 passed / 8 skipped**, Ruff/Format PASS 후 원격 M03 브랜치에
+정상 fast-forward 반영하고 그 SHA에서 M04를 생성했다.
+
+M03의 실제 네트워크 duplicate-close 시험은 **NOT_TESTED**, 과거 BTC 12:47 이벤트의
+정확한 원인은 미입증 상태다. 이들을 M04 PASS로 대체하지 않는다.
+상세: [M03 동결 검토](DEV-M03-freeze-review.md).
+
+## 3. Frozen Source/Config/Data Audit
+
+원본 W03 패키지·코드·설정·CSV·검증 원장을 확보했다. 26개 파일과 원본 매핑,
+runtime parameter 및 의존성 버전을 확인했다. 소스 바이트와 초기화 래퍼를 재사용한다.
+
+| 항목 | SHA-256 |
+|---|---|
+| 원본 W03 패키지 | `2ad1bca4fcd1a0694bd39bafff3d3f6b93beccc3f7237b0376a73e030f9ad155` |
+| 전략 코드 | `0850fcc32356a4275e0795cece08a6f6d701220b941ce94e2b95dd1ce802a965` |
+| 설정/파라미터 | `6a7ce60ed2199cc432cbd98733e3b72f4d926e7120cbc5e69d224b6d9fd0863b` |
+| BTC 데이터 | `f4ddf0ec4354fe66f2635887a809e433962877b9b090a728a02d3721a0183059` |
+| ETH 데이터 | `f0cda00c5f062f947c0175c911b8afb521a62d38d04d3f45c220a56d3e7002bb` |
+| SOL 데이터 | `fe428dcdce137be444ab38f2c497651455173b4bbcbc2a5cdc75e386e1265187` |
+| 통합 Manifest | `8508a1bd15d68b04fe0428c298330961859af88a9a26d565d23fcdf1d93bd38c` |
+| Baseline | `faa1492c637dd155c08c30c755359a52b2cf1e14f0c20d46b1e14c90f21993b2` |
+| lock.json 바이트 | `b1659e920f6b5e718a9073ddca8a0c91f6ae16993100af9d3a57758d73a68d30` |
+
+| 전략 ID | 버전 | 보존 규칙 | 원본 신호 차단 행 수 |
+|---|---|---|---:|
+| `trend_ma_v0.1` | `0.1` | EMA50/200 교차 | 201 |
+| `trend_donchian_v0.1` | `0.1` | Entry55/Exit20, current bar 제외 | 56 |
+| `trend_tsmom_v0.1` | `0.1` | Momentum180의 0 교차 | 182 |
+
+Manifest 버전은 `v0.1`로 표기한다. 위 행 수는 원본 초기화 기준이며 M04가 새로 정한
+전략 파라미터가 아니다. ATR20 EWM `adjust=False`, Stop 3×signal ATR, Risk 0.5%,
+Asset Cap 33.3%, Fee 10bps/side, Model Slippage 5bps/side, long-only/no leverage/
+no pyramiding을 보존한다. 공통 초기화는 2020-08-11 04:00 UTC, 평가 구간은
+2020-09-13 16:00 UTC~2026-10-02 08:00 UTC open이다. 마지막 close는 연구 동결
+12:00 UTC다. 7일·42봉을 EMA200/Momentum180의 충분한 초기화로 인정하지 않는다.
+
+## 4. W03 9개 조합 재현
+
+세 전략의 원본 공유 포트폴리오 trade ledger와 equity curve, 총 6개 산출물이 정확히
+일치했다. CR/LF 전달 형식만 정규화하고 숫자 문자열·시각·순서·포지션 계산·ATR·
+손절 초기화·next-bar timing을 비교했다. 새 수치 허용 오차를 도입하지 않았다.
+
+| 전략 | 자산 | Entry boolean | Exit boolean | 원장 거래 수(terminal 포함) |
 |---|---|---:|---:|---:|
 | T1 | BTC | 32 | 31 | 32 |
 | T1 | ETH | 37 | 36 | 37 |
@@ -66,121 +95,143 @@ offline historical verification; live signal evaluation never invokes that engin
 | T3 | ETH | 204 | 203 | 204 |
 | T3 | SOL | 200 | 200 | 199 |
 
-All combinations have 13,460 initialization/evaluation rows. Boolean counts describe
-conditions, not orders. Indicator and boolean prefix regeneration is exact; future
-mutations do not change past output. Adapter snapshots are compared against Frozen
-output for all nine combinations in deterministic tests.
+각 조합은 13,460행이다. Boolean 수와 실행 원장 거래 수는 서로 다른 검증 값이다.
+지표/신호 prefix 재계산과 미래 가격 변경 시험도 통과했다.
 
-**Evidence flag:** no independent full-bar W03 indicator/boolean dump was supplied.
-Indicator verification uses byte-identical source, exact prefix parity and original
-entry ATR/stop ledger parity. The W04 117-record handoff inventory is not claimed as
-a newly rerun W03 test. Detailed new audit output is `docs/DEV-M04-reproduction.json`.
+**OBS-02 증거 한계:** 독립적인 W03 전체 봉 indicator/boolean 덤프가 없다.
+모든 과거 봉을 별도 당시 지표 덤프와 대조했다는 주장은 하지 않는다. 실제 근거는
+바이트 동일 원본, 원본 원장/자본 곡선, 진입 ATR/손절 및 prefix 일치다.
+따라서 `PASS_WITH_EVIDENCE_FLAG`를 유지한다. 기존 W04 117행 inventory는 새로
+수행한 W03 독립 재현으로 계산하지 않는다.
 
-## Implemented gates and persistence
+## 5. 실제 01시·05시 마감 및 재시작
 
-Every shared evaluation reads a consistent M03 SQLite read transaction through
-MarketRepository. It checks UTC boundaries, confirmed closure, integrity, OHLCV,
-valid original provenance, ingestion/event time, unresolved gaps, recorded candle
-conflicts, initialization continuity and Frozen warmup. All three symbols must have
-the target bar. M04 market access remains read-only and makes no schema changes.
-Frozen historical data plus continuous post-freeze M03 rows provide initialization;
-no warmup parameter or replacement price was invented.
+| 항목 | 01시 구간 | 05시 구간 |
+|---|---|---|
+| 마감 KST | 2026-10-10 01:00 | 2026-10-10 05:00 |
+| 마감 UTC | 2026-10-09 16:00 | 2026-10-09 20:00 |
+| Collector 실행 KST | 00:50:00.631~01:07:08.885 | 04:50:01.291~05:07:08.858 |
+| WS uptime / 메시지 | 1025.017s / 4419 | 1025.019s / 4195 |
+| 실제 확정 WS 봉 | BTC/ETH/SOL 3개 | BTC/ETH/SOL 3개 |
+| 시장 DB 출처 수 | REST_BOOTSTRAP 162 + WS_LIVE 3 | REST_BOOTSTRAP 162 + WS_LIVE 3 |
+| 시장 품질(완료 시점) | COMPLETE | COMPLETE |
+| 미해결 gap / invalid / conflict | 0 / 0 / 0 | 0 / 0 / 0 |
+| LIVE batch / 결정 | 1 / 9 | 1 / 9 |
+| NO_ACTION | 8 | 8 |
+| 다른 후보 | T3 ETH EXIT_CANDIDATE | T3 ETH ENTRY_CANDIDATE |
+| Observer DB 전체 결정 | prelaunch 9 + live 9 = 18 | prelaunch 9 + live 9 = 18 |
+| Observer → restart PID | 1856 → 18212 | 27928 → 28676 |
+| 재시작 상태 / 추가 결정 | ALREADY_COMMITTED / 0 | ALREADY_COMMITTED / 0 |
+| 읽기 전용 독립 재감사 | INDEPENDENT_LIVE_AUDIT_PASS | INDEPENDENT_LIVE_AUDIT_PASS |
 
-Nine decisions, including NO_ACTION, commit atomically with nine checkpoints. The
-unique key is strategy/version/symbol/bar-open. Deterministic hashes exclude only
-wall-clock evaluation time. Original classification is retained on re-evaluation.
-Conflicting repeated output stops without overwrite. Batch failures are immutable
-DATA_BLOCKED attempt records, never partial committed batches. DB triggers preserve
-decisions/manifests/health; recovery verifies record hashes, batch completeness and
-latest checkpoints. Persistent STOP survives restart. CLI uses a process writer lease.
+18개 live 결정은 모두 `LIVE_OBSERVATION`, 평가 대상 원본 봉은 `WS_LIVE`다.
+각 DB의 9개 checkpoint, 완전한 batch hash, decision hash, SQLite integrity/foreign key,
+원본 파일 감사 전후 해시를 확인했다. 18개 snapshot/input hash를 재계산해 정확히
+일치했다. 원본 DB·로그·JSON은 변경하지 않았다.
 
-M04 maintains its own process/observation clock, not Formal W04. REST bootstrap and
-recovery never become LIVE or FORMAL observations. Prelaunch or missed bars remain
-state backfill. No existing W04 state, T1 continuity/formal ledger, T2/T3 HOLD or
-quote-freshness Gate F is modified. FORMAL_W04_ELIGIBLE is reserved and never emitted.
+| T3 ETH 실제 지표 | 01시 | 05시 |
+|---|---:|---:|
+| ATR20 | 34.19768487345464 | 33.727800629781896 |
+| Momentum180 | -0.0004939243291864903 | 0.004887466588791689 |
+| Entry / Exit | false / true | true / false |
+| 마감 경계 이후 평가 지연 | 1.080s | 1.039s |
 
-## Tests and observed validation
+후보는 보유 포지션이나 체결을 뜻하지 않는다. 전체 snapshot·개별 입력 해시는
+[야간 감사 JSON](DEV-M04-overnight-audit.json)에 보존했다.
+원본 폴더: `data/m04-live-20261010T010000/`, `data/m04-live-20261010T050000/`.
 
-Windows Python 3.14.7: **283 passed, 8 skipped** on the latest completed full run.
-The skipped tests are existing opt-in network/account tests. The final rerun after
-writer-lease/supervisor additions also passed: 283 passed, 8 skipped in 41.50s. Ruff and
-format cover new implementation; Frozen sources are excluded to preserve hashes.
+이들은 **독립 DB의 두 관찰 구간**이며 01:07~04:50 연속 관찰을 입증하지 않는다.
+각 종료 DB의 품질은 실제 완료 시점으로 판단한다. 나중 봉이 없다는 이유로 종료된
+구간을 재분류하지 않는다. 600초 public smoke는 실제 마감 0개, prelaunch 결정 9개였고
+[smoke 요약](DEV-M04-smoke-summary.json)에 보존하며 OBS-12에 포함하지 않는다.
 
-Covered: source/config/data/runtime changes; full original-engine reproduction;
-nine snapshots; W03 warmup masking; Momentum180; current-bar exclusion; future
-information; provenance/time classification; missing/invalid/unresolved data;
-read-only market DB; immutable records; duplicate conflicts; atomic rollback;
-checkpoint corruption; persistent STOP; actual subprocess forced crash and separate
-CLI restart; existing M01/M02/M03 tests; no credential/config or order path invoked.
+## 6. 결정적 테스트·회귀·두 OS CI
 
-GitHub CI for implementation commit `2ac688b8e685794eb488860de297f37b2992bf71`:
-[run 37933197403](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37933197403).
-Windows: 283 passed, 8 skipped in 53.96s. Linux: 283 passed, 8 skipped in 34.58s.
-Both Ruff and format PASS (52 files). Step evidence: `docs/DEV-M04-ci.json`.
+기준 HEAD `11bfffbdfb529f3da8ac11ebd49fb1ed81c23725`의
+[CI 37985954969](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37985954969)를
+재조회하고 두 job 원본 로그의 pytest/Ruff/Format 결과를 확인했다.
 
-New Windows public 600-second collector/observer smoke: **PASS**, between real closes.
-M03 collector COMPLETED / public WS LIVE_PASS, 605.016 seconds uptime, 2,604 messages,
-144 REST_BOOTSTRAP candles, 33 price snapshots, three bootstrap gaps resolved,
-zero reconnects, **zero actual WS closed candles**. All three symbols observed.
-M04 committed nine decisions with real Frozen indicator snapshots: one
-ENTRY_CANDIDATE and eight NO_ACTION, all **PRELAUNCH_STATE_BACKFILL**. No orders,
-positions, fills or Formal W04 clock were created. A separate new observer process
-returned ALREADY_COMMITTED, retained all nine records and added zero decisions.
-Evidence and actual snapshots: `docs/DEV-M04-smoke-summary.json`.
-This smoke does not establish OBS-12 and its old candidate is not a new live signal.
+| 환경 | Pytest | Ruff | Format |
+|---|---|---|---|
+| Windows / Python 3.14.7 | 283 passed, 8 skipped / 53.38s | PASS | PASS, 53 files |
+| Linux / Python 3.14.7 | 283 passed, 8 skipped / 34.59s | PASS | PASS, 53 files |
 
-Actual Windows M04 4H closes: **PASS**, at 2026-10-10 01:00 and 05:00 KST /
-2026-10-09 16:00 and 20:00 UTC. Each collector received three genuine closed WS
-candles, saved three WS_LIVE rows, and completed with no conflict or pending candle.
-Each observer committed all nine LIVE_OBSERVATION decisions atomically. Both
-market DBs have 162 REST_BOOTSTRAP + 3 WS_LIVE candles and no missing/invalid row
-or unresolved gap as of their actual completion. Frozen history joins continuously.
+8 skipped는 기존 opt-in 네트워크/계정 검사이며 PASS 수에 포함하지 않는다.
+이전 로컬 전체 회귀는 283 passed / 8 skipped(41.50s)였다. 이번 재작성에서는
+읽기 전용 야간 감사와 Ruff/Format을 다시 실행했다. 전체 pytest를 이번에 새로
+실행했다고 표시하지 않는다. 실제 야간 실행 SHA의
+[CI 37936170401](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37936170401)와
+[야간 CI JSON](DEV-M04-overnight-ci.json)도 별도로 유지한다.
 
-| Close KST | Collector WS uptime | Messages | Live decisions | NO_ACTION | Other candidate | Restart added |
-|---|---:|---:|---:|---:|---|---:|
-| 01:00 | 1025.017s | 4419 | 9 | 8 | T3 ETH EXIT_CANDIDATE | 0 |
-| 05:00 | 1025.019s | 4195 | 9 | 8 | T3 ETH ENTRY_CANDIDATE | 0 |
-
-Independent read-only post-run audit recalculated all 18 live indicator snapshots
-and input/decision hashes from original market rows and matched exactly. Each DB
-has 18 total decisions: nine prelaunch + nine live. Nine latest checkpoints and
-one complete live batch per DB passed recovery/hash checks. Different observer
-and restart PIDs were confirmed; original DB, reports and log file hashes stayed
-unchanged. No formal classification, order, position, fill or forward PnL was created.
-
-Raw evidence remains in `data/m04-live-20261010T010000/` and
-`data/m04-live-20261010T050000/`. Checked-in independent results and all 18 snapshots
-are in `docs/DEV-M04-overnight-audit.json`; audit command:
-`python tools/audit_dev_m04_overnight.py`. These are separate observation windows,
-not continuous coverage between 01:07 and 04:50. Fixed-window completeness is
-checked as of actual completion, not as of later candle deadlines.
-
-Latest overnight execution/CI commit: `9985e2c999185d4793612bc0edb4552f57c62d12`.
-[CI 37936170401](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37936170401):
-Linux 283 passed / 8 skipped (30.44s), Windows 283 passed / 8 skipped (35.00s);
-Ruff and format PASS on both. Evidence: `docs/DEV-M04-overnight-ci.json`.
-
-## Acceptance gates
-
-| Gate | Current result |
+| 검사 영역 | 대표 테스트 / 실제 근거 |
 |---|---|
-| OBS-01 source/config | PASS |
-| OBS-02 nine-combination reproduction | PASS_WITH_EVIDENCE_FLAG above |
-| OBS-03 Frozen warmup/history | PASS offline and both live windows |
-| OBS-04 closed only | PASS deterministic |
-| OBS-05 provenance | PASS deterministic, smoke and both live windows |
-| OBS-06 shared barrier | PASS deterministic |
-| OBS-07 persistent decisions | PASS deterministic |
-| OBS-08 restart duplicates | PASS separate-process deterministic |
-| OBS-09 fail closed | PASS deterministic |
-| OBS-10 Windows/Linux/Ruff/format | PASS both OS CI, including Ruff/format |
-| OBS-11 M01/M02/M03 regression | PASS both OS CI |
-| OBS-12 actual M04 closed-bar | PASS two real closes and independent replay |
-| OBS-13 no trading/paper execution | PASS |
-| OBS-14 Formal clock unchanged | PASS; M04 never accesses W04 state |
+| Frozen 9개 재현 | `test_w03_nine_combinations_exact_original_ledger_equity` |
+| Warmup·Momentum180·Donchian | `test_frozen_warmup_blocked`, `test_donchian_current_bar_excluded_and_momentum_180` |
+| 확정봉·미래 정보 | `test_unconfirmed_bar_blocked`, `test_future_ingestion_blocked`, 미래 지표 변경 검사 |
+| REST/LIVE·복구 분리 | `test_backfill_live_separation`, `test_missing_then_recovery_remains_state_only` |
+| barrier·gap·OHLCV | `test_three_symbol_barrier_blocks_all`, gap/invalid OHLCV 검사 |
+| 입력/소스/설정 변경 | `test_input_hash_rejects_mutation`, `test_source_parameter_data_change_detected` |
+| 중복·불변·DB 실패 | 충돌 STOP, 9개 checkpoint transaction rollback, immutable/corruption 검사 |
+| Crash/Restart·STOP 복구 | 실제 subprocess 강제 종료·CLI 재시작, `test_persistent_stop_survives_new_store` |
+| Read-only·실행 경계 | `test_read_only_market_repository`, `test_cli_no_credentials_or_execution` |
+| 정상 무신호 배치 | `test_no_action_batch_is_persisted` 및 두 실제 batch |
 
-All required technical/observation gates have actual evidence. Flags: no supplied
-independent full-bar W03 indicator dump; actual duplicate close delivery by the
-network was not observed (zero duplicate_closures in both runs); two windows do
-not establish continuous coverage between them. The old M03 event cause remains
-unproven. No claim of Formal W04 performance or Preflight authorization is added.
+## 7. Acceptance Gate 판정
+
+| Gate | 결과 | 근거와 검증 범위 |
+|---|---|---|
+| OBS-01 | PASS | Frozen source/config/runtime parameter 및 26개 파일 hash |
+| OBS-02 | PASS_WITH_EVIDENCE_FLAG | 9개 조합, 원본 6개 원장/자본 산출물 일치; 독립 전체 지표 덤프 부재 |
+| OBS-03 | PASS | 원본 초기화·warmup 및 두 live DB의 연속된 과거 이력 |
+| OBS-04 | PASS | 미확정/미래 차단 테스트 및 실제 WS 확정봉 |
+| OBS-05 | PASS | W03/REST/WS 출처와 input hash 보존·재계산 |
+| OBS-06 | PASS | 3심볼 미완료 차단 및 실제 동일 봉 9개 batch |
+| OBS-07 | PASS | 별도 SQLite 영속 저장, 각 batch NO_ACTION 8개 포함 |
+| OBS-08 | PASS | 두 새 프로세스 ALREADY_COMMITTED·추가 결정 0 |
+| OBS-09 | PASS | 오류·충돌·DB rollback·상태 훼손 fail-closed 결정적 검사 |
+| OBS-10 | PASS | 기준 HEAD Windows/Linux pytest·Ruff·Format |
+| OBS-11 | PASS | 동일 전체 CI에 기존 M01/M02/M03 회귀 포함 |
+| OBS-12 | PASS | 두 실제 마감·snapshot·영속 저장·재시작·출처 검증 |
+| OBS-13 | PASS | Observer 주문/Paper 경로 미호출, 실제 보고서 execution=false |
+| OBS-14 | PASS | Formal 시작 false, W04 상태 접근/변경 경로 없음 |
+
+OBS-09의 장애 주입은 결정적 테스트 결과이며 두 실제 구간에서 해당 장애가 모두
+발생했다는 뜻은 아니다. OBS-02를 증거 한계가 없는 무조건 PASS로 해석하지 않는다.
+
+## 8. 미관찰 항목과 상태 보존
+
+| 항목 | 상태 | 처리 |
+|---|---|---|
+| 독립 W03 전체 봉 indicator/boolean 덤프 | MISSING_ARTIFACT_FLAG | 원본/원장/prefix 증거 범위만 주장 |
+| 실제 네트워크 duplicate-close 수신 | NOT_OBSERVED | 두 실행 duplicate_closures=0; 결정적/재시작 검사와 구분 |
+| 01:07~04:50 연속 WS 관찰 | NOT_OBSERVED | 두 독립 구간만 PASS |
+| 기존 M03 BTC 12:47 개별 원인 | UNPROVEN | 과거 증거 한계 유지 |
+| 기존 opt-in 검사 8개 | SKIPPED | pytest PASS 수에 포함하지 않음 |
+| W04 Preflight / Gate F / Formal 성과 | NOT_EVALUATED_BY_M04 | 별도 승인·공식 Manifest·W04 엔진 책임 |
+
+T1의 기존 `W03_PASS_WITH_FLAGS`, T2/T3의 `W03_HOLD`를 유지한다.
+T1 Continuity Shadow와 Formal 상태를 혼합하지 않는다. 연구 동결
+`2026-10-02T12:00:00Z`를 유지한다. REST_BOOTSTRAP/REST_RECOVERY나 놓친 봉은
+state backfill로만 사용하며 `FORMAL_W04_ELIGIBLE`은 발행하지 않는다.
+
+실제 next-bar execution, bid/ask freshness, shared capital risk, Paper Ledger와
+Formal HOLD/STOP은 W04 엔진의 책임이다. 원본 역사 엔진은 재현 검증에만 사용한다.
+M04는 주문·Paper 실행·포지션 변경·실제 체결가·Forward PnL·신규 Formal 시작을 만들지 않는다.
+
+## 9. 재검증 방법과 산출물
+
+저장소 루트의 동일 의존성 환경에서 실행한다.
+
+```powershell
+.venv/Scripts/python.exe tools/audit_dev_m04_overnight.py
+.venv/Scripts/ruff.exe check .
+.venv/Scripts/ruff.exe format --check .
+```
+
+감사는 원본 시장/Observer DB를 읽기 전용으로 열고 감사 JSON만 재생성한다.
+원본 DB·JSON·로그 감사 전후 hash를 확인하며 새 LIVE/Formal 신호를 만들지 않는다.
+
+[최종 한국어 보고서](DEV-M04-final-report-ko.md), [역사 재현](DEV-M04-reproduction.json),
+[야간 감사](DEV-M04-overnight-audit.json), [기준 HEAD CI](DEV-M04-report-ci.json),
+[야간 실행 CI](DEV-M04-overnight-ci.json), `artifacts/w03/lock.json`,
+Observer adapter/gate/batch/store/CLI, 회귀 테스트, 두 검증 도구 및 README를 보존한다.

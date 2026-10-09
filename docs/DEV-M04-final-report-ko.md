@@ -1,6 +1,11 @@
 # DEV-M04 최종 검증 보고서
 
-작성일: 2026-10-10 KST. 최종 기술 판정: **DEV-M04_PASS_WITH_FLAGS**.
+재작성일: 2026-10-10 KST. 최종 기술 판정: **DEV-M04_PASS_WITH_FLAGS**.
+
+이번 재작성에서 기존 01시·05시 원본 DB를 다시 읽기 전용으로 감사했다. 18개 실시간
+지표·입력 해시·결정 해시 일치와 재시작 추가 0개를 재확인했다. 새 마감을 추가 관찰한
+것은 아니다. 검증 근거와 미관찰 항목을 정리한 [재검증 보고서](DEV-M04-validation.md)를
+함께 갱신하고, 기존 최종 커밋의 실제 두 OS CI 로그를 보고서에 추가했다.
 
 01:00·05:00 KST 실제 4H 마감에서 BTC/ETH/SOL 확정봉과 9개 전략 결정을 각각
 관찰·영구 저장했다. 별도 프로세스 재시작 후 추가 결정은 모두 0개다. 원본 시장
@@ -20,14 +25,16 @@ M04는 주문·Paper Execution·포지션 변경·체결가 생성·Forward PnL 
 | M03 최종 검토·회귀 후 동결 및 원격 반영 | 1b1bf582f34a526d9204a084dc4573c79efa124e |
 | M04 최초 구현 | 2ac688b8e685794eb488860de297f37b2992bf71 |
 | 최종 실제 관찰·두 OS CI 검증 대상 | 9985e2c999185d4793612bc0edb4552f57c62d12 |
+| 이번 재검증 기준 HEAD·감사 도구 포함 CI | 11bfffbdfb529f3da8ac11ebd49fb1ed81c23725 |
 
 M03의 로컬 미커밋 수정과 실제 17:00 KST 증거를 검토했다. 추가 검토에서 동일 버킷의
 기존 가격 receipt를 확인해도 신규 쓰기 수가 0이면 재시작 실행을 실패로 표시하는
 문제를 수정했다. M03 회귀 245 passed / 8 skipped 및 Ruff/format 후 원격 M03 브랜치를
 정상 fast-forward로 갱신하고, 그 SHA에서 별도 M04 checkout을 생성했다.
 
-main과 M01/M02/M03 이력, 기존 DB 및 Frozen 원본은 보존했다. 최종 보고서·독립 감사
-자료는 위 검증 대상의 후속 M04 커밋으로 게시한다. 보고서 자체의 커밋 식별자는
+main과 M01/M02/M03 이력, 기존 DB 및 Frozen 원본은 보존했다. 이번 보고서 재작성은
+구현 소스와 관찰 데이터를 변경하지 않으며 기준 HEAD의 후속 M04 커밋으로 게시한다.
+보고서 자체의 커밋 식별자는
 `git log -1 --format=%H -- docs/DEV-M04-final-report-ko.md`와 최종 전달 메시지에서 확인한다.
 
 ## 2. Frozen Source Audit
@@ -139,6 +146,19 @@ M01/M02/M03 기존 테스트를 포함하며 생략된 8개는 opt-in 네트워�
 통과했다. 새 독립 감사 도구는 원본 DB 두 개와 18개 지표/해시를 실제 대조해 PASS를
 확인했고 Ruff/format도 통과했다. 상세 [야간 CI 증거](DEV-M04-overnight-ci.json).
 
+감사 도구와 기존 최종 보고서가 포함된 Commit `11bfffbdfb529f3da8ac11ebd49fb1ed81c23725`의
+[CI 37985954969](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37985954969)도
+완료 결과와 원본 job 로그를 다시 확인했다.
+
+| 환경 | Pytest | Ruff | Format |
+|---|---|---|---|
+| Windows | 283 passed / 8 skipped, 53.38s | PASS | PASS, 53 files |
+| Linux | 283 passed / 8 skipped, 34.59s | PASS | PASS, 53 files |
+
+상세 [기준 HEAD CI 증거](DEV-M04-report-ci.json). 이번 재작성 중에는 원본 자료의
+읽기 전용 독립 감사와 Ruff/format을 재실행했다. 전체 pytest를 이번에 새로 실행한
+것으로 표시하지 않는다. 위 pytest 수치는 해당 SHA의 실제 CI 결과다.
+
 결정적 테스트 범위: Frozen 소스/설정/런타임 변경, warmup 차단, Momentum180,
 Donchian current-bar 제외, 확정봉·미래 정보, 3심볼 barrier, REST/LIVE 구분,
 중복 충돌, 실제 SQLite transaction rollback, checkpoint 훼손, persistent STOP,
@@ -185,6 +205,7 @@ M04는 Gate F나 W04 Preflight를 새로 검증한 것으로 표시하지 않는
 
 [기술 검증 문서](DEV-M04-validation.md), [원본 재현 결과](DEV-M04-reproduction.json),
 [실제 야간 감사/지표](DEV-M04-overnight-audit.json), [두 OS CI](DEV-M04-overnight-ci.json),
+[기준 HEAD 최종 CI](DEV-M04-report-ci.json),
 `artifacts/w03/lock.json`, Observer adapter/gate/batch/store/CLI, 회귀 테스트,
 `tools/verify_dev_m04_live.py`, `tools/audit_dev_m04_overnight.py`, README.
 
