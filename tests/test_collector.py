@@ -1,13 +1,15 @@
 import asyncio
+import json
 import sqlite3
 import threading
 
 import pytest
-from test_market_data import START, candle_payload, event
+from test_market_data import START, candle_payload, event, price_payload
 from test_persistence import record
 from test_websocket import FakeSocket, monitor_fixture
 
 from trading_system.config import SYMBOLS
+from trading_system.market_data.health import ConnectionState
 from trading_system.persistence.collector import Collector
 from trading_system.persistence.config import PersistenceConfig
 from trading_system.persistence.records import INTERVAL_MS, epoch_ms
@@ -44,6 +46,25 @@ def test_collect_restart_default_buckets_and_counters(tmp_path):
         assert all(len(repository.recent_prices(symbol)) == 1 for symbol in SYMBOLS)
         assert all(len(repository.candles(s, 0, START)) == 1 for s in SYMBOLS)
         assert repository.verify(START)["data_status"] == "COMPLETE"
+
+
+def test_restart_existing_snapshot_receipts_complete_without_new_writes(tmp_path):
+    path = tmp_path / "receipts.sqlite"
+    for attempt in range(2):
+        monitor, clock, _ = monitor_fixture()
+        collector = Collector(
+            PersistenceConfig(db_path=path),
+            monitor=monitor,
+            recovery=successful_recovery,
+            clock_ms=lambda: epoch_ms(clock.utc_now()),
+            # Reception finishes before the next polling tick; final flush is identical.
+            tick_seconds=0.02,
+        )
+        result = asyncio.run(collector.run(5))
+        assert result["status"] == "COMPLETED"
+        assert set(collector.snapshot_buckets) == set(SYMBOLS)
+        if attempt:
+            assert result["counters"]["price_snapshots_written"] == 0
 
 
 def test_slow_writer_does_not_block_ws_reception(tmp_path):
@@ -269,3 +290,94 @@ def test_database_cli_no_account_configuration_and_secret_output(tmp_path, monke
     for path in (tmp_path / "data").iterdir():
         content = path.read_bytes()
         assert b"unit-test-api-key" not in content and b"unit-test-api-secret" not in content
+
+
+def test_future_price_retries_before_next_one_second_message(tmp_path):
+    async def scenario():
+        monitor, clock, _ = monitor_fixture()
+        monitor.health.state = ConnectionState.CONNECTED
+        monitor._on_message(json.dumps(price_payload("BTCUSDT", millis=START + 600)))
+        monitor._on_message(json.dumps(price_payload("ETHUSDT", millis=START)))
+        path = tmp_path / "future-price.sqlite"
+        collector = Collector(
+            PersistenceConfig(db_path=path),
+            monitor=monitor,
+            clock_ms=lambda: epoch_ms(clock.utc_now()),
+        )
+        async with AsyncWriter(path) as writer:
+            await collector._flush(writer)
+            assert "BTCUSDT" not in collector.snapshot_buckets
+            assert collector.snapshot_buckets["ETHUSDT"] == START // 60000
+            assert 0.6 <= collector.snapshot_retry_seconds < 1
+            clock.now += collector.snapshot_retry_seconds
+            await collector._flush(writer)
+        with MarketRepository(path) as repository:
+            prices = repository.recent_prices("BTCUSDT")
+            assert len(prices) == 1
+            assert prices[0].event_time_ms == START + 600
+            assert prices[0].received_at_ms == START
+            assert prices[0].bucket_start_ms == START
+            assert len(repository.recent_prices("ETHUSDT")) == 1
+
+    asyncio.run(scenario())
+
+
+def test_snapshot_ack_uses_committed_bucket_after_clock_adjustment(tmp_path):
+    async def scenario():
+        monitor, clock, _ = monitor_fixture()
+        clock.now = 59.9
+        monitor.health.state = ConnectionState.CONNECTED
+        monitor._on_message(json.dumps(price_payload(millis=START + 59900)))
+        times = iter([START + 60001, START + 60001, START + 59900])
+        path = tmp_path / "clock-adjustment.sqlite"
+        collector = Collector(
+            PersistenceConfig(db_path=path),
+            monitor=monitor,
+            clock_ms=lambda: next(times, START + 59900),
+        )
+        async with AsyncWriter(path) as writer:
+            await collector._flush(writer)
+            assert collector.snapshot_buckets["BTCUSDT"] == START // 60000
+            clock.now = 60.1
+            collector.clock_ms = lambda: START + 60100
+            monitor._on_message(json.dumps(price_payload(millis=START + 60100)))
+            await collector._flush(writer)
+        with MarketRepository(path) as repository:
+            assert {p.bucket_start_ms for p in repository.recent_prices("BTCUSDT")} == {
+                START,
+                START + 60000,
+            }
+
+    asyncio.run(scenario())
+
+
+def test_price_receipt_is_not_acknowledged_after_commit_failure(tmp_path):
+    async def scenario():
+        monitor, clock, _ = monitor_fixture()
+        monitor.health.state = ConnectionState.CONNECTED
+        monitor._on_message(json.dumps(price_payload()))
+        path = tmp_path / "price-rollback.sqlite"
+        collector = Collector(
+            PersistenceConfig(db_path=path),
+            monitor=monitor,
+            clock_ms=lambda: epoch_ms(clock.utc_now()),
+        )
+        async with AsyncWriter(path) as writer:
+            commit = writer.store.commit
+
+            def fail():
+                raise sqlite3.OperationalError("disk failure fixture")
+
+            writer.store.commit = fail
+            with pytest.raises(PersistenceError):
+                await collector._flush(writer)
+            assert not collector.snapshot_buckets
+            with MarketRepository(path) as repository:
+                assert not repository.recent_prices("BTCUSDT")
+            writer.store.commit = commit
+            await collector._flush(writer)
+            assert collector.snapshot_buckets["BTCUSDT"] == START // 60000
+        with MarketRepository(path) as repository:
+            assert len(repository.recent_prices("BTCUSDT")) == 1
+
+    asyncio.run(scenario())

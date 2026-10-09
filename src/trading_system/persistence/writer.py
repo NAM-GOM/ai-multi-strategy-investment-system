@@ -1,10 +1,13 @@
 """One worker thread / one DB connection / one outstanding operation."""
 
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
-from trading_system.persistence.records import CandleRecord
+from trading_system.persistence.records import CandleRecord, epoch_ms
 from trading_system.persistence.store import MarketStore
+
+logger = logging.getLogger("trading_system.writer")
 
 
 class AsyncWriter:
@@ -48,15 +51,53 @@ class AsyncWriter:
 
         def write(store):
             actual_at = write_clock() if write_clock else snapshot_at_ms
-            candles = tuple(CandleRecord.from_ws(event, actual_at) for event in pending)
-            return store.write_batch(
+            # A slightly slow local clock must not turn a genuine close into a failure.
+            ready = []
+            for event in pending:
+                until_close = epoch_ms(event.close_time) - actual_at
+                if 0 <= until_close <= 1000:
+                    break
+                ready.append(event)
+            candles = tuple(CandleRecord.from_ws(event, actual_at) for event in ready)
+            stats = store.write_batch(
                 candles=candles,
                 prices=prices,
                 snapshot_at_ms=actual_at,
                 snapshot_seconds=snapshot_seconds,
             )
+            bucket = actual_at // (snapshot_seconds * 1000)
+            receipts = {}
+            for event in prices:
+                event_ms = epoch_ms(event.event_time)
+                row = store.connection.execute(
+                    "SELECT event_time_ms FROM price_snapshots "
+                    "WHERE symbol=? AND bucket_start_ms=?",
+                    (event.symbol, bucket * snapshot_seconds * 1000),
+                ).fetchone()
+                accepted = row is not None and row[0] >= event_ms
+                if accepted:
+                    receipts[event.symbol] = bucket
+                outcome = (
+                    "committed"
+                    if accepted
+                    else "future_event"
+                    if event_ms > actual_at
+                    else "not_stored"
+                )
+                logger.info(
+                    "price snapshot symbol=%s bucket=%d write_at_ms=%d event_time_ms=%d "
+                    "received_at_ms=%d outcome=%s",
+                    event.symbol,
+                    bucket,
+                    actual_at,
+                    event_ms,
+                    epoch_ms(event.received_at),
+                    outcome,
+                )
+            stats["price_snapshot_buckets"] = receipts
+            return stats, tuple(ready)
 
-        stats = await self.call(write)
+        stats, ready = await self.call(write)
         # No dequeue on rollback, disk error, or cancellation. A persisted conflict is explicit.
-        market.ack_closed(pending)
+        market.ack_closed(ready)
         return stats

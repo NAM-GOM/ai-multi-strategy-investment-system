@@ -10,7 +10,7 @@ from trading_system.binance.public import PublicAPI
 from trading_system.binance.websocket import WebSocketMonitor
 from trading_system.config import SYMBOLS, Config
 from trading_system.market_data.health import ConnectionState
-from trading_system.persistence.records import DAY_MS, now_ms
+from trading_system.persistence.records import DAY_MS, epoch_ms, now_ms
 from trading_system.persistence.recovery import Backfill
 from trading_system.persistence.store import RUN_COUNTERS, PersistenceError
 from trading_system.persistence.writer import AsyncWriter
@@ -47,6 +47,7 @@ class Collector:
         self.persistence_failed = False
         self.interrupted = False
         self.snapshot_buckets = {}
+        self.snapshot_retry_seconds = tick_seconds
 
     def _add(self, stats):
         for key in RUN_COUNTERS:
@@ -91,9 +92,17 @@ class Collector:
             write_clock=self.clock_ms,
         )
         self._add(stats)
-        if stats.get("price_snapshots_written", 0) == len(prices):
-            for event in prices:
-                self.snapshot_buckets[event.symbol] = bucket
+        receipts = stats.get("price_snapshot_buckets", {})
+        self.snapshot_buckets.update(receipts)
+        # Keep strict future/stale rejection, but avoid a one-second polling phase lock
+        # when Binance's event clock is slightly ahead of the local clock.
+        now = self.clock_ms()
+        future_delays = [
+            (epoch_ms(event.event_time) - now) / 1000 + 0.001
+            for event in prices
+            if event.symbol not in receipts and epoch_ms(event.event_time) > now
+        ]
+        self.snapshot_retry_seconds = min([self.tick_seconds, *future_delays])
 
     async def _flush_final(self, writer):
         # Reception has stopped. Drain the bounded queue in committed batches, including
@@ -101,6 +110,8 @@ class Collector:
         await self._flush(writer, final=True)
         while self.monitor.market.closed_events:
             await self._flush(writer, final=True)
+            if self.monitor.market.closed_events:
+                await asyncio.sleep(min(0.05, self.tick_seconds))
 
     def _summary(self, monitor):
         snapshot = monitor.snapshot()
@@ -152,7 +163,7 @@ class Collector:
                         )
                         next_retention = now + 3600
                     try:
-                        await asyncio.wait_for(stop.wait(), timeout=self.tick_seconds)
+                        await asyncio.wait_for(stop.wait(), timeout=self.snapshot_retry_seconds)
                     except TimeoutError:
                         pass
                     if stop.is_set():
@@ -204,7 +215,7 @@ class Collector:
                     and self.recovery_status == "COMPLETE"
                     and not self.conflicts
                     and not self.monitor.market.closed_events
-                    and self.counters["price_snapshots_written"] > 0
+                    and bool(self.snapshot_buckets)
                     else "INCOMPLETE"
                 )
                 try:

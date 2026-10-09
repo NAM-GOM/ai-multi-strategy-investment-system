@@ -347,3 +347,42 @@ def test_all_symbols_ordered_and_complete_without_interpolation(tmp_path):
         assert repository.verify(START + INTERVAL_MS)["data_status"] == "COMPLETE"
         assert repository.verify(START + 2 * INTERVAL_MS)["data_status"] == "INCOMPLETE"
         assert len(repository.candles("BTCUSDT", START, START + INTERVAL_MS)) == 1
+
+
+def test_future_close_waits_for_local_clock_without_ack_or_fabricated_time(tmp_path):
+    async def scenario():
+        path = tmp_path / "future-close.sqlite"
+        market = MarketState()
+        closed = event(candle_payload(closed=True))
+        market.apply(closed)
+        async with AsyncWriter(path) as writer:
+            await writer.flush(market, (), snapshot_at_ms=START + INTERVAL_MS - 500)
+            assert market.peek_closed() == (closed,)
+            with MarketRepository(path) as repository:
+                assert repository.last_candle("BTCUSDT") is None
+            await writer.flush(market, (), snapshot_at_ms=START + INTERVAL_MS + 100)
+            assert not market.peek_closed()
+        with MarketRepository(path) as repository:
+            saved = repository.last_candle("BTCUSDT")
+            assert saved.source == "WS_LIVE"
+            assert saved.event_time_ms == epoch_ms(closed.event_time)
+            assert saved.ingested_at_ms == START + INTERVAL_MS + 100
+            assert repository.integrity()
+
+    asyncio.run(scenario())
+
+
+def test_far_future_close_fails_without_ack(tmp_path):
+    async def scenario():
+        path = tmp_path / "far-future-close.sqlite"
+        market = MarketState()
+        closed = event(candle_payload(closed=True))
+        market.apply(closed)
+        async with AsyncWriter(path) as writer:
+            with pytest.raises(ValueError):
+                await writer.flush(market, (), snapshot_at_ms=START + INTERVAL_MS - 2000)
+            assert market.peek_closed() == (closed,)
+        with MarketRepository(path) as repository:
+            assert repository.last_candle("BTCUSDT") is None
+
+    asyncio.run(scenario())
