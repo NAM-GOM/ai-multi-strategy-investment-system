@@ -1,4 +1,4 @@
-# AI Multi-Strategy Investment System — DEV-M02
+# AI Multi-Strategy Investment System — DEV-M03
 
 **현재 버전은 주문 기능이 없는 Read-only Binance Spot 시장 데이터 수집 시스템입니다.**
 DEV-M01의 REST 조회·계정 인증을 유지하며 DEV-M02에서 공개 WebSocket 수집을 추가합니다.
@@ -21,6 +21,98 @@ Python **3.14.7**을 사용하며 프로젝트의 지원 버전은 **3.14.x**입
 Database, Signal Engine, 전략 실행, Portfolio Allocation, 백테스트, 모의 투자는 이후 Cycle의 범위입니다.
 DEV-M02 완료는 전략 수익성 검증이나 W04 Forward Test 완료를 의미하지 않습니다.
 CCXT나 Trading Framework는 사용하지 않습니다.
+
+## DEV-M03 SQLite 저장·복구
+
+DEV-M03 브랜치는 `dev-m03-sqlite-market-data`이며 DEV-M02 최신 버전을 기준으로 합니다.
+Python 기본 `sqlite3`를 사용합니다. ORM과 추가 의존성은 없습니다.
+기본 DB는 **`data/market_data.sqlite`**이며 로컬 디스크를 사용하세요. UNC/URI/메모리 DB는 거절합니다.
+기존 `stream`은 DB에 저장하지 않는 DEV-M02 검증 명령으로 유지합니다.
+
+```bash
+uv sync --frozen --group dev
+uv run --frozen python -m trading_system.cli db-init
+uv run --frozen python -m trading_system.cli collect --duration 600
+uv run --frozen python -m trading_system.cli db-status
+uv run --frozen python -m trading_system.cli db-verify
+```
+
+각 명령에 `--db-path data/another.sqlite`를 지정할 수 있습니다.
+`collect`의 기본 duration은 600초입니다. `--bootstrap-days 7`, `--snapshot-seconds 60`,
+`--retention-days 30`, `--recovery-max-days 365`로 초기 운영 범위를 설정합니다.
+`--report-file logs/collect-new.json`은 기존 파일을 덮어쓰지 않는 공개 요약 파일입니다.
+Public REST/WS만 사용하며 **API Key / Secret / .env / Private API가 필요 없습니다**.
+
+- Schema version 1, WAL, synchronous FULL, busy_timeout 5000 ms, foreign_keys ON,
+  명시적인 BEGIN IMMEDIATE / COMMIT / ROLLBACK을 사용합니다.
+- OS writer lock과 단일 worker thread로 SQLite writer를 하나만 허용합니다. 동시에 두 collector를
+  실행하면 두 번째는 `writer_unavailable`로 실패합니다. 조회와 온라인 백업은 별도 읽기 연결입니다.
+- WebSocket 수신은 별도 asyncio task입니다. DB 작업은 worker thread에서 실행하고 한 작업만
+  제출하므로 느린 디스크나 REST 복구가 수신 event loop를 직접 차단하지 않습니다.
+- 가격은 심볼별 60초 UTC 버킷에 신선한 실제 값을 샘플링합니다. 가격 이벤트·수신 시각이 실제
+  쓰기 시점에서 10초 이내일 때만 저장합니다. 같은 버킷의 재시작/재수집은 최신 event_time만
+  반영합니다. 이전 가격을 새 이벤트 시각으로 바꾸거나 누락 가격을 보간하지 않습니다.
+- 확정봉은 Decimal을 TEXT로 저장합니다. `x=false`는 금지하고 `x=true`만 `WS_LIVE`로 저장합니다.
+  확정 큐는 **Peek → transaction commit → ACK** 순서입니다. 저장 실패/취소 시 ACK하지 않습니다.
+  DB 실패는 `PERSISTENCE_FAILURE`로 수집을 중단하고 성공으로 보고하지 않습니다.
+- 확정봉 PK는 `(symbol, interval, open_time_ms)`이며 동일 OHLCV는 중복으로 처리합니다.
+  다른 OHLCV는 원본을 보존하고 `candle_conflicts`와 `data_gaps.CONFLICT`에 기록합니다.
+  충돌은 자동 해결하거나 덮어쓰지 않습니다.
+- 최초 실행에는 서버 UTC 시간 기준 최근 7일 완전히 닫힌 4H 봉을 세 심볼에서 가져옵니다.
+  기존 DEV-M01 `PublicAPI.candles()`는 유지하고 새 `candles_range()`를 사용합니다.
+  `REST_BOOTSTRAP`과 `REST_RECOVERY`를 구별하며 REST event_time은 NULL입니다.
+- 시작·연결 이후·재연결 이후·60초 주기·종료 시 DB 연속성과 기존 마지막 봉을 REST와 비교합니다.
+  Gap은 OPEN → RECOVERING → 재조회/연속성 검사 → RESOLVED이며 불완전/실패는 FAILED,
+  값 불일치는 CONFLICT입니다. DB 상태는 INCOMPLETE로 유지합니다.
+- 한 복구 cycle은 기본 최대 32개 REST 요청, 최소 0.25초 간격, 일시적 transport/5xx만 최대 1회
+  재시도합니다. 429/418/451은 같은 cycle의 추가 요청을 중단합니다. 페이지는 최대 1000개입니다.
+- 기존 provenance와 최초 ingested_at은 중복 수신으로 변경하지 않습니다. REST 봉을 나중에
+  WS_LIVE로 승격하지 않습니다. 조회 결과는 원래 source와 UTC milliseconds를 함께 반환합니다.
+  REST 사후 복구는 W04 Genuine Forward 관찰을 대신하지 않습니다.
+- 가격은 기본 30일 보존, 확정봉은 자동 삭제하지 않습니다. run 시작/종료를 DB와 별도 fsync
+  저널 `market_data.sqlite.runs.jsonl`에 기록합니다. DB만 삭제돼도 저널이 남아 있으면 실행
+  이력을 복원합니다. **DB·저널·백업을 모두 삭제하면 복원이 불가능합니다.**
+  시장 데이터는 검증된 백업과 REST로 복구하며 저장 전 유실된 가격 메시지의 완전 복구는 보장하지 않습니다.
+- `db-verify`는 네트워크 없이 SQLite 무결성·검증된 값·UTC 4H 연속성·Gap 상태를 확인합니다.
+  미초기화/미수집/현재 UTC까지 뒤처진 DB는 COMPLETE로 표시하지 않습니다. 시스템 시계를 정확히 유지하세요.
+
+안전한 백업과 새 DB 경로 복원:
+
+```bash
+uv run --frozen python -m trading_system.cli db-backup --backup-path data/backups/market-new.sqlite
+uv run --frozen python -m trading_system.cli db-restore --backup-path data/backups/market-new.sqlite --db-path data/restored-new.sqlite
+uv run --frozen python -m trading_system.cli db-verify --db-path data/restored-new.sqlite
+```
+
+SQLite Backup API와 integrity_check를 사용합니다. 운영 중 DB 파일만 복사해 WAL을 누락하지 마세요.
+백업/복원 대상 파일이 이미 있으면 거절하며 자동 삭제/덮어쓰기를 하지 않습니다.
+DB/WAL/SHM/백업/실행 저널/검증 산출물은 Git에서 제외합니다. 임의 SQL 실행 CLI는 없습니다.
+
+Windows 로컬의 **600초 수집 → 프로그램 재시작 → 추가 600초 → 백업/복원** 검증:
+
+```powershell
+uv python install 3.14.7
+uv sync --frozen --group dev
+uv run --frozen pytest
+uv run --frozen ruff check .
+uv run --frozen ruff format --check .
+uv run --frozen python tools/verify_dev_m03.py --duration 600
+```
+
+검증 도구는 기존 DB를 쓰지 않고 `data/dev-m03-validation-<시각>-<UUID>/`를 새로 생성합니다.
+두 collection 결과, 기존 기록 보존, 중복/Gap/출처, 백업 복원, credential 출력 검사를 수행하고
+`DEV-M03-local-summary.json`에 결과를 기록합니다. 실제 WS 확정봉은 관찰된 경우에만 기재합니다.
+`--duration 120`은 짧은 smoke용이며 Windows 10분×2 Acceptance를 대신하지 않습니다.
+기본 pytest는 새 `--live-collect` integration을 포함해 실제 네트워크 검사를 모두 skip합니다.
+
+```bash
+uv run --frozen pytest -m integration --live-collect -s
+```
+
+Windows 긴 pytest ID 오류는 65,537자 입력을 유지한 채 짧은 명시적 ID로 해결했습니다.
+push/PR CI는 Linux와 Windows에서 기본 pytest / Ruff를 실행하며 Secrets/live 옵션을 주입하지 않습니다.
+상세 검증은 `docs/DEV-M03-validation.md`와 `docs/DEV-M03-summary.json`에 기록합니다.
+DEV-M03는 주문·Strategy·Paper Trading·Portfolio Allocation·PostgreSQL을 추가하거나 W04 Clock을 시작하지 않습니다.
 
 ## 환경 생성 및 설치
 

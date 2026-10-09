@@ -1,0 +1,22 @@
+{
+  "cycle": "DEV-M03",
+  "status": "DEV-M03_HOLD",
+  "baseline_commit": "da8ab0e5729edf18aaccda69a91b3489670d8426",
+  "branch": "dev-m03-sqlite-market-data",
+  "schema_version": 1,
+  "python_version": "3.14.7",
+  "unit_tests": {"passed": 237, "live_skipped": 8, "new_tests": 47},
+  "windows_compatibility_prerequisite": {
+    "commit": "64c75b0",
+    "unit_passed": 190,
+    "live_skipped": 7,
+    "ci_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37872643747",
+    "status": "PASS"
+  },
+  "windows_local_live": {"status": "PENDING_USER_EXECUTION", "required_duration_seconds_each": 600, "required_runs": 2},
+  "cloud_live": {"status": "FIRST_RUN_PASS_SECOND_RUNNING", "duration_seconds_each": 120, "first_messages": 465, "first_price_snapshots_written": 9, "rest_bootstrap_candles": 126, "ws_live_closed_candles": 0},
+  "implementation_ci": {"status": "PENDING"},
+  "private_api_used": false,
+  "trading_implemented": false,
+  "w04_formal_clock_started": false
+}
