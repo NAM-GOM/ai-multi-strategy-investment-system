@@ -2,6 +2,7 @@
 
 **현재 버전은 주문 기능이 없는 Read-only Binance Spot 시장 데이터 수집 시스템입니다.**
 DEV-M01의 REST 조회·계정 인증을 유지하며 DEV-M02에서 공개 WebSocket 수집을 추가합니다.
+DEV-M03에서는 SQLite 저장·재시작·확정봉 누락 복구를 지원합니다.
 GitHub 저장소의 소스, `.python-version`, `pyproject.toml`, `uv.lock`이 구현과 환경의 기준입니다.
 Python **3.14.7**을 사용하며 프로젝트의 지원 버전은 **3.14.x**입니다.
 
@@ -16,9 +17,10 @@ Python **3.14.7**을 사용하며 프로젝트의 지원 버전은 **3.14.x**입
 - BTC / ETH / SOL miniTicker·4H Kline Combined Stream, Decimal / UTC 이벤트 모델
 - 진행 중 / 확정 Candle 분리, 세션 내 확정 중복 방지, 제한된 메모리와 큐
 - 자동 재연결·Backoff·Jitter, 심볼별 신선도 감지, 시간 제한 CLI 모니터
+- SQLite 가격 스냅샷·확정봉 저장, 출처 보존, Gap 복구, 실행 이력 및 안전한 백업·복원
 
 주문·취소·출금·이체·선물·마진·권한 변경 기능은 없습니다. 주문 함수 placeholder도 없습니다.
-Database, Signal Engine, 전략 실행, Portfolio Allocation, 백테스트, 모의 투자는 이후 Cycle의 범위입니다.
+PostgreSQL, Signal Engine, 전략 실행, Portfolio Allocation, 백테스트, 모의 투자는 이후 Cycle의 범위입니다.
 DEV-M02 완료는 전략 수익성 검증이나 W04 Forward Test 완료를 의미하지 않습니다.
 CCXT나 Trading Framework는 사용하지 않습니다.
 
@@ -89,6 +91,9 @@ SQLite Backup API와 integrity_check를 사용합니다. 운영 중 DB 파일만
 DB/WAL/SHM/백업/실행 저널/검증 산출물은 Git에서 제외합니다. 임의 SQL 실행 CLI는 없습니다.
 
 Windows 로컬의 **600초 수집 → 프로그램 재시작 → 추가 600초 → 백업/복원** 검증:
+
+DEV-M03가 main에 병합되기 전에는 `dev-m03-sqlite-market-data` 브랜치에서 실행하세요.
+기존 작업 트리에 변경이 있다면 보존하고 별도 clone을 사용하세요. DB와 `.env`를 삭제하지 마세요.
 
 ```powershell
 uv python install 3.14.7
@@ -287,8 +292,9 @@ uv run --frozen python -m trading_system.cli stream --duration 120 --ws-base-url
 실패를 모의 데이터로 대체하지 않습니다. JSON 보고서는 기존 파일을 덮어쓰지 않습니다.
 
 실제 4H 마감은 2분 테스트에 없을 수 있습니다. 확정 로직의 단위 테스트 PASS와
-실제 `x=true` 관찰은 별도입니다. 세션 재시작 후의 중복 방지·영속적인 exactly-once·누락 복구는
-후속 Cycle 범위입니다. [DEV-M02 검증 기록](docs/DEV-M02-validation.md)을 확인하세요.
+실제 `x=true` 관찰은 별도입니다. 저장하지 않는 `stream`의 중복 방지는 메모리 세션 범위입니다.
+DEV-M03의 `collect`는 DB PK 중복 방지와 REST 누락 복구를 추가하며, 영속적인 이벤트 전달의
+exactly-once 보장을 주장하지 않습니다. [DEV-M02 검증 기록](docs/DEV-M02-validation.md)을 확인하세요.
 
 공식 규격: [Binance Spot WebSocket Streams](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams).
 
@@ -301,13 +307,15 @@ ruff check .
 ruff format --check .
 ```
 
-기본 실행은 실제 네트워크를 사용하는 7개 Integration Test를 skip합니다.
+기본 실행은 실제 네트워크를 사용하는 8개 Integration Test를 skip합니다.
 Unit Test는 `httpx.MockTransport`로 가격, 캔들, 호가, Decimal spread, latency, 환경변수,
 공개 HMAC 테스트 벡터, 서명된 실제 query 형식, 잔액, missing credential,
 HTTP / Binance / timeout / connection / redirect 오류 및 로그 유출 방지를 검증합니다.
 Unit Test의 실제 네트워크 접근은 테스트 fixture에서 차단합니다.
 DEV-M02는 파서·Decimal/UTC·중복 확정·제한된 메모리/큐·STALE·재연결/Backoff/Jitter·
 Ping/Pong·서버 종료·사전 rotation·Ctrl+C에 대응하는 취소·credential 미사용을 결정적으로 검사합니다.
+DEV-M03는 SQLite transaction/ACK, 실패 주입, Decimal/UTC/출처, 재시작, Gap/REST 복구와
+공식 Backup API를 검증합니다. CI는 Linux와 Windows에서 같은 기본 명령을 실행합니다.
 
 실제 API를 사용하는 선택적 검증:
 
