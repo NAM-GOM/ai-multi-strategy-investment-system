@@ -136,13 +136,22 @@ Repository Ruff and format checks passed; the protected 61-file freeze test pass
 All legacy M01–M04 tests remain included. Existing dependency lock and CI workflow
 remain unchanged; normal push/PR CI uses Ubuntu/Windows and no live flags/secrets.
 
-Final local full regression before the last transport-boundary guard: **407 passed,
-8 skipped, 128.83 seconds**, Python 3.14.7. After that guard, the complete new
-integration subset: **45 passed, 102.60 seconds**; Ruff check and format check PASS.
-This distinction preserves the tested source scope. The current full suite contains
-416 tests (408 offline tests and eight opt-in live skips).
-Current integration CI: PENDING_CI_RESULT (the 363-test evidence above belongs to
-the earlier manual adapter and does not establish the new integration's CI).
+Final current local full regression at runtime/test commit
+`ce57579eefb4848a398671e0f217f93563573fab`: **408 passed, 8 skipped,
+135.42 seconds**, Python 3.14.7. The complete new integration subset also passed:
+**45 passed, 102.60 seconds**. Ruff check and format check PASS (73 files).
+The 416-test suite retains all legacy tests and eight opt-in live skips.
+
+Current integrated runtime/test CI was observed, including decoded logs:
+[GitHub Actions run 38041521608](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38041521608)
+at the same commit completed successfully on both platforms. Subsequent changes
+record only this evidence and do not change runtime/test code. The earlier 363-test
+CI evidence above belongs to the previous manual adapter.
+
+| Platform | pytest | Ruff | Format | Job |
+| --- | --- | --- | --- | --- |
+| ubuntu-latest / Python 3.14.7 | 408 passed, 8 skipped; 143.08 s | PASS | PASS (73 files) | [114182560830](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38041521608/job/114182560830) |
+| windows-latest / Python 3.14.7 | 408 passed, 8 skipped; 223.33 s | PASS | PASS (73 files) | [114182560964](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38041521608/job/114182560964) |
 
 The new integration tests use actual M03/M04 SQLite, actual Frozen computation and
 HTTPX MockTransport. The fixture creates an isolated, deterministic SOL T1 EMA
@@ -182,7 +191,7 @@ was enabled. This was an execution sandbox issue, not a Binance connectivity res
 | EX-10 | RESULT account/strategy/reset reconciliation PASS mock; NOT_TESTED live |
 | EX-11 | RESULT gated T1 connection and protective exit PASS mock; NOT_TESTED activation |
 | EX-12 | RESULT all M01–M04 regression retained and PASS locally |
-| EX-13 | Current Windows/Linux integration CI: PENDING_CI_RESULT |
+| EX-13 | RESULT: current integrated Ubuntu/Windows pytest, Ruff, format PASS; run 38041521608 |
 | EX-14 | RESULT Production GET-only sources unchanged; order URL structural tests PASS |
 | EX-15 | RESULT 61 protected hashes and Frozen reproduction/clock tests PASS |
 
