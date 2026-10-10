@@ -33,10 +33,10 @@ M04 virtual environment, with PYTHONPATH pointed only at the E01 checkout. Tests
 use HTTPX MockTransport and isolated SQLite files. The existing autouse fixture
 rejects real HTTP in unit tests; no live flags are enabled.
 
-Windows results: full pytest **362 passed, 8 skipped** (53.65 seconds), followed
-by one additional CLI error-journal failure test and the final verification below.
-Final changed-module + freeze subset: **80 passed** (2.01 seconds); repository
-Ruff check and format check both pass after the final CLI change.
+Local Windows results: full pytest **362 passed, 8 skipped** (53.65 seconds), then
+the final changed-module + freeze subset **80 passed** (2.01 seconds) after adding
+one CLI error-journal failure test. Repository Ruff check and format check pass.
+Final complete suites on both CI platforms: **363 passed, 8 skipped**.
 All eight skips are opt-in legacy live integration tests; no actual API request
 was made. Ruff check and repository format check passed. The portable
 `DEV-E01-freeze-manifest.json` checks **61** existing source/W03 files against
@@ -47,8 +47,28 @@ the final run uses a fresh workspace-local `data/` test directory. This is not a
 Testnet connectivity result.
 
 The existing push/PR workflow retains ubuntu-latest/windows-latest pytest and
-Ruff/format checks with no Testnet credentials or live execution flags. A Linux
-result will only be claimed after the remote CI run is observed.
+Ruff/format checks with no Testnet credentials or live execution flags.
+
+## Observed Windows/Linux CI evidence
+
+Runtime/test code commit: `0ef79dd9108cfe4b681470ec06340bc750779a78`.
+[GitHub Actions run 38038789151](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38038789151)
+completed successfully on both platforms. Job steps and decoded logs were read
+after completion; the following are observed results, not projected CI outcomes.
+Subsequent validation-report edits do not change runtime/test code.
+
+| Platform | pytest | Ruff | Format | Job |
+| --- | --- | --- | --- | --- |
+| ubuntu-latest, Python 3.14.7 | 363 passed, 8 skipped; 35.88 s | PASS | PASS | [114174712660](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38038789151/job/114174712660) |
+| windows-latest, Python 3.14.7 | 363 passed, 8 skipped; 60.62 s | PASS | PASS | [114174712741](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38038789151/job/114174712741) |
+
+Coverage includes exact network policy and production-order rejection, isolated
+credential loading, HMAC, TLS/redirect policy, Decimal/filter sizing, balances,
+local/exchange limits, dual unlock/preflight, all supported order statuses, actual
+cancel response alias semantics, timeout/query and lost cancellation ACK, durable
+reservation/ACK failure recovery, separate SQLite connections and a fresh CLI
+process, trade pagination/dedup/fee conflict, resets, reconciliation rollback,
+DB fail-closed behavior, persistent kill switch and all M01–M04 regression tests.
 
 ## Promotion criteria
 
