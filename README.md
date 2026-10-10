@@ -581,3 +581,103 @@ a new observer process to test duplicate prevention. It requests temporary Windo
 sleep prevention and restores it on exit. A scheduled target is a validation plan,
 not a Formal W04 start or evidence of a received candle. If the close is not received,
 the report remains LIVE_NOT_OBSERVED or records failure.
+
+## DEV-E01 — Binance Spot Testnet manual execution (Issue #5)
+
+This module is independent of DEV-M01–M04 and the W04 formal paper ledger. It reads
+only `BINANCE_TESTNET_API_KEY` and `BINANCE_TESTNET_API_SECRET` from the process
+environment, never production `.env` or account keys. The only network host is
+`https://testnet.binance.vision`. No strategy signal automatically creates an order.
+T2/T3 W03_HOLD and W04 official start/ledger remain unchanged. Testnet performance
+is not W04 Formal Forward performance.
+
+Run from the repository root with the installed environment (`uv run --frozen`
+can replace `python`). Default operations are offline DRY_RUN:
+
+```text
+python -m trading_system.testnet.cli testnet-status
+python -m trading_system.testnet.cli testnet-order-check --symbol BTCUSDT --side BUY --quantity 0.0001 --price 100000
+python -m trading_system.testnet.cli testnet-kill-switch --kill on
+```
+
+The order-check example is an illustrative 10 USDT LIMIT intent, not a current
+price or a trading recommendation. All actual sizes/prices must pass current
+Testnet filters. Save the returned client_id; all subsequent commands use that ID.
+The default journal is `data/testnet_execution.sqlite`. `--db` may choose another
+directory, but must use this dedicated filename. `.env.testnet.example` contains
+empty placeholders only; `.env.testnet` is ignored and is not automatically loaded.
+
+After separately creating a **Spot Testnet HMAC key**, configure it locally through
+your environment/secret manager without committing or pasting it into reports.
+Read-only preflight requires `--online` and still cannot submit orders:
+
+```text
+python -m trading_system.testnet.cli testnet-reconcile --online
+python -m trading_system.testnet.cli testnet-balances --online
+```
+
+For an explicitly authorized Testnet preflight, set the process environment variable
+`BINANCE_TESTNET_TRADING_ENABLED` to exactly `YES_TESTNET_ONLY`, then validate the
+persisted intent (replace CLIENT_ID with its actual value):
+
+```text
+python -m trading_system.testnet.cli testnet-order-check --online --client-id CLIENT_ID --confirm-test-request
+```
+
+This sends only `POST /api/v3/order/test`, which does not create an exchange order.
+Inspect/report its result first. **Only after separate user approval of one actual
+virtual order**, execute within five minutes of the successful preflight:
+
+```text
+python -m trading_system.testnet.cli testnet-order-submit --online --client-id CLIENT_ID --confirm-testnet-order
+python -m trading_system.testnet.cli testnet-order-status --online --client-id CLIENT_ID
+python -m trading_system.testnet.cli testnet-reconcile --online
+```
+
+If it has not filled, observe its real status or explicitly cancel it:
+
+```text
+python -m trading_system.testnet.cli testnet-order-cancel --online --client-id CLIENT_ID --confirm-testnet-cancel
+python -m trading_system.testnet.cli testnet-reconcile --online
+```
+
+Run the last command from a new process to verify persistence, then inspect order,
+execution, commission and balance records. NEW/PARTIALLY_FILLED is never reported
+as FILLED. Submit/cancel need both the configuration unlock and their own confirmation
+flag; `--online` alone does not authorize a POST/DELETE. Kill-switch defaults to
+on when its command is invoked. `--kill off` explicitly removes that local stop;
+it never clears a reconciliation hold. Kill/hold do not prevent explicit cancellation.
+
+The initial supported order type is LIMIT/GTC only, BTCUSDT/ETHUSDT/SOLUSDT.
+Caps: 20 USDT/order, three attempted new orders and 40 USDT total/UTC day, one
+outstanding order. Decimal rounding, Spot filters and free balances (including a
+1% fee buffer) are checked again before submission. MARKET orders are refused;
+MARKET_LOT_SIZE therefore does not apply to submitted LIMIT orders. If current
+exchange minimums conflict with the caps, no order is sent.
+
+Timeouts are queried by the same client ID, never automatically re-POSTed. Unknown
+execution, external activity, reset suspicion, accounting mismatch or DB failure
+blocks further orders. HTTP 403/451 records BLOCKED_ENVIRONMENT without bypass.
+Rate limiting creates a hold/backoff; do not repeatedly issue requests. Holds
+persist across restarts and are never cleared automatically.
+
+After manually reviewing evidence of a Testnet reset/account epoch change, a new
+session can be explicitly started; this retains history and daily attempt budgets:
+
+```text
+python -m trading_system.testnet.cli testnet-reconcile --online --new-session --acknowledge-reset
+```
+
+An active kill switch is preserved. Unaccounted current open orders still block
+the new session. Do not replace/delete SQLite to bypass a hold or retry an uncertain
+intent. See [design](docs/DEV-E01-design.md) and
+[validation/live report](docs/DEV-E01-validation.md). Until a real Testnet order and
+fill/cancellation are observed, status remains **TESTNET_LIVE_NOT_TESTED / DEV-E01_HOLD**.
+
+Offline verification (normal CI contains no Testnet credentials/live flags):
+
+```text
+uv run --frozen pytest
+uv run --frozen ruff check .
+uv run --frozen ruff format --check .
+```

@@ -232,3 +232,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# DEV-E01 dedicated sandbox local secrets and runtime artifacts
+.env.testnet
+!.env.testnet.example
+data/testnet_execution.sqlite*
