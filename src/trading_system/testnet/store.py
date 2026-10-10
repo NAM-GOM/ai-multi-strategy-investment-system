@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS risk_events (
 
 
 class Store:
+    extension_tables = frozenset()
+
     def __init__(self, path="data/testnet_execution.sqlite"):
         target = Path(path)
         # CLI cannot accidentally point at a market/observer database.
@@ -74,7 +76,7 @@ class Store:
             "reconciliation_events",
             "risk_events",
         }
-        if existing - permitted:
+        if existing - (permitted | self.extension_tables):
             self.close()
             raise TestnetError("FOREIGN_DB_REJECTED")
         self.db.executescript(SCHEMA)

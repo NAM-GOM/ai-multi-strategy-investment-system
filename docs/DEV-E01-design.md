@@ -1,5 +1,11 @@
 # DEV-E01 — isolated Spot Testnet execution
 
+This document preserves the previously validated manual adapter design at
+`9612b240`. The current M04 integration extends it as described in
+[DEV-E01-architecture.md](DEV-E01-architecture.md); use the integrated CLI for
+strategy allocations and Router work. Existing manual APIs remain available on
+legacy journals.
+
 Issue: https://github.com/NAM-GOM/ai-multi-strategy-investment-system/issues/5
 
 Source baseline: `574eb63597e42724a6450abd0928458ae72c4b88` (DEV-M04).

@@ -587,7 +587,8 @@ the report remains LIVE_NOT_OBSERVED or records failure.
 This module is independent of DEV-M01–M04 and the W04 formal paper ledger. It reads
 only `BINANCE_TESTNET_API_KEY` and `BINANCE_TESTNET_API_SECRET` from the process
 environment, never production `.env` or account keys. The only network host is
-`https://testnet.binance.vision`. No strategy signal automatically creates an order.
+`https://testnet.binance.vision`. The legacy manual adapter does not consume signals;
+the integrated M04 commands below add explicitly gated T1 routing.
 T2/T3 W03_HOLD and W04 official start/ledger remain unchanged. Testnet performance
 is not W04 Formal Forward performance.
 
@@ -681,3 +682,117 @@ uv run --frozen pytest
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 ```
+
+## DEV-E01 — integrated M04 execution
+
+Use `python -m trading_system.execution.cli` for the integrated journal. M04 remains
+an Observer; the new reader generates separate execution intents from immutable
+LIVE_OBSERVATION decisions. T1 alone is eligible, T2/T3 stay SHADOW_SIGNAL_ONLY.
+Existing Production GET-only commands, Frozen sources, M03/Observer DBs and W04
+Formal Clock remain unchanged. Architecture and limitations are recorded in
+[DEV-E01-architecture.md](docs/DEV-E01-architecture.md).
+
+Every command defaults to offline operation. Router initialization records all
+existing signals as its startup watermark; these are never ordered. Run it before
+the next closed 4H bar and keep M03 collection/M04 observation running. A stopped
+Observer or a delayed/recovered signal blocks execution. Default DBs are
+`data/market_data.sqlite`, `data/strategy_observer.sqlite`, and the separate
+`data/testnet_execution.sqlite`; `--market-db` / `--observer-db` select existing
+read-only inputs. Their files must differ from the execution journal.
+
+```text
+python -m trading_system.execution.cli testnet-status
+python -m trading_system.execution.cli testnet-router-status
+python -m trading_system.execution.cli testnet-router-dry-run --assumed-capital 1000 --assumptions data/testnet_dry_run_inputs.json
+python -m trading_system.execution.cli testnet-kill-switch --kill on
+```
+
+An offline assumptions JSON contains `exchangeInfo` (public filters), `balances`
+(asset/free/locked strings), and `quotes` (Testnet bookTicker s/b/a/B/A/u plus
+`received_ms`). It contains no credentials. Quote/reference age and divergence
+still must pass. `--assumed-capital` explicitly assumes a flat T1 ledger for DRY_RUN;
+it creates no actual allocation or order. Without quotes/filters/capital the report
+shows the missing prerequisite and does not claim risk approval. Online DRY_RUN
+can fetch current filters, signed read-only balances and fixed public WS quotes
+with `--online`; it sends no POST. Each DRY_RUN consumes that signal, so later
+execution always needs a different fresh signal. Phase A offline/mock evidence
+does not establish live Testnet results.
+
+On Windows PowerShell, use a secure local mechanism to set only
+`BINANCE_TESTNET_API_KEY` / `BINANCE_TESTNET_API_SECRET` to newly issued Spot Testnet
+HMAC credentials. Keep them out of chat, source, reports and command output.
+The CLI reads process environment; `.env.testnet` is ignored and not automatically
+loaded. Never reuse Production keys. No real Testnet verification was performed
+during development. Proceed phase by phase after obtaining dedicated credentials.
+
+Read-only Phase B (after code/security/mock Phase A):
+
+```text
+python -m trading_system.execution.cli testnet-reconcile --online
+python -m trading_system.execution.cli testnet-balances --online
+```
+
+Phase C requires deliberate Testnet test-request authorization. Set
+`BINANCE_TESTNET_TRADING_ENABLED=YES_TESTNET_ONLY` locally only for the approved
+validation. Pick current price/quantity satisfying filters and the 20 USDT ceiling;
+the placeholders below are not executable quantities.
+
+```text
+python -m trading_system.execution.cli testnet-order-check --online --symbol SOLUSDT --side BUY --quantity QUANTITY --price PRICE --confirm-test-request
+```
+
+The command authenticates/reconciles before POST `/api/v3/order/test`, then returns
+the persisted CLIENT_ID and review with environment/side/quantity/notional/limits
+and APPROVAL_TOKEN. This test request creates no fill. Offline checks say DRY_RUN
+and do not claim full exchange filter validation.
+
+Phase D: only after the user separately approves that exact small virtual order:
+
+```text
+python -m trading_system.execution.cli testnet-order-submit --online --client-id CLIENT_ID --confirm-testnet-order --approval-token APPROVAL_TOKEN
+```
+
+It prints the review before sending. Missing or changed tokens block submission.
+Testnet responses and exchange Order ID/status are journaled; NEW isn't FILLED.
+Phase E: query/cancel as explicitly desired, reconcile fills/fees/balances and restart:
+
+```text
+python -m trading_system.execution.cli testnet-order-status --online --client-id CLIENT_ID
+python -m trading_system.execution.cli testnet-order-cancel --online --client-id CLIENT_ID --confirm-testnet-cancel
+python -m trading_system.execution.cli testnet-reconcile --online
+```
+
+Phase F requires A/B/C evidence in the active session, a reconciled terminal manual
+verification order, verified T1 allocation and separate user activation. Allocate
+only quote capital after reconciliation; completed manual verification fills become
+an acknowledged baseline and are excluded from T1 positions/PnL:
+
+```text
+python -m trading_system.execution.cli testnet-allocate --online --capital CAPITAL_USDT
+```
+
+Only after separate automation approval, set
+`BINANCE_TESTNET_AUTOMATED_ENABLED=YES_T1_TESTNET_ONLY`, keep the trading unlock,
+and invoke:
+
+```text
+python -m trading_system.execution.cli testnet-router-run --online --confirm-automated-testnet
+```
+
+This executes **one cycle**, first reconciliation, then protective initial 3 ATR
+exits and newly eligible signals; it doesn't launch a background trader. Repeated
+cycles need a separately approved local scheduler. Every actual order is tested
+and revalidated; stale signals, divergent prices, insufficient capital, unknown
+execution, M04 holds and kill switch block it. The finite execution budget can also
+block exits. Open LIMIT/GTC orders remain at Testnet during PC downtime; this is
+not equivalent to exact modeled next-open/stop fills or continuous exit protection.
+After sleep/reboot, reconcile before running any cycle. Inspect all holds; never
+delete the SQLite journal to force recovery. Reset acknowledgement creates a new
+session and clears allocation/gate evidence, preserves history and carries the kill
+switch. Restore normal defaults by removing both unlock variables.
+
+Account funds, strategy capital/reservations, fills, actual fees, average entry,
+initial stop and realized/unrealized PnL are separate. Unsupported fee-asset
+attribution blocks new orders. Testnet performance always carries
+`MAINNET_SIGNAL_TESTNET_EXECUTION_EXPERIMENT` and proves no Production execution
+quality. Live gates remain **DEV-E01_HOLD / TESTNET_LIVE_NOT_TESTED** until observed.

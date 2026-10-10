@@ -154,6 +154,8 @@ class TestnetExecutionClient:
         except ValueError:
             raise TestnetError("INVALID_RESPONSE") from None
         code = data.get("code") if isinstance(data, dict) else None
+        if code is not None and type(code) is not int:
+            raise TestnetError("INVALID_RESPONSE")
         if response.status_code >= 500 or code in (-1006, -1007):
             raise TestnetError("UNKNOWN_EXECUTION", code=code)
         if response.status_code >= 400 or (isinstance(code, int) and code < 0):
