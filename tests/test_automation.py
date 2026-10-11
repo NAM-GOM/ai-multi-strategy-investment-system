@@ -225,7 +225,9 @@ def test_cap_accepts_boundary(notional):
     notional_guard(notional, "1")
 
 
-@pytest.mark.parametrize("notional", ["8.310001", "20", "1000"])
+@pytest.mark.parametrize(
+    "notional", ["8.310001", "20", "1000", "8.31000000000000000000000000000000001"]
+)
 def test_cap_rejects_before_rounding(notional):
     with pytest.raises(TestnetError, match="E02_ORDER_LIMIT"):
         notional_guard(notional, "1")

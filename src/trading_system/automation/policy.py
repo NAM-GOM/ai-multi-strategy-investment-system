@@ -14,8 +14,11 @@ def notional_guard(quantity, price):
     quantity, price = dec(quantity), dec(price)
     if quantity <= 0 or price <= 0:
         raise TestnetError("NON_POSITIVE_ORDER")
-    if quantity * price > ORDER_CAP:
-        raise TestnetError("E02_ORDER_LIMIT")
+    # A high-precision raw input must not round back down to 8.31 during multiplication.
+    precision = len(quantity.as_tuple().digits) + len(price.as_tuple().digits)
+    with localcontext(prec=max(28, precision)):
+        if quantity * price > ORDER_CAP:
+            raise TestnetError("E02_ORDER_LIMIT")
 
 
 class AutomationRisk(RiskEngine):
