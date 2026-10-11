@@ -1,4 +1,4 @@
-name: DEV-M01-M04 regression tests
+name: DEV-M01-M05 regression tests
 on:
   push:
   pull_request:
@@ -21,3 +21,7 @@ jobs:
       - run: uv run --frozen pytest
       - run: uv run --frozen ruff check .
       - run: uv run --frozen ruff format --check .
+      - if: runner.os == 'Linux'
+        run: |
+          bash -n scripts/m05-runtime.sh scripts/m05-preflight.sh
+          uv run --frozen python scripts/m05-verify-units.py
