@@ -292,8 +292,9 @@ class Executor:
                     "SELECT i.client_id FROM order_intents i "
                     "JOIN signal_receipts r USING(client_id) "
                     "WHERE i.attempted_ms IS NULL AND i.state IN "
-                    "('INTENT_CREATED','RISK_APPROVED','VALIDATED') AND r.strategy_id=?",
-                    (T1,),
+                    "('INTENT_CREATED','RISK_APPROVED','VALIDATED') "
+                    "AND r.strategy_id=? AND r.session_id=?",
+                    (T1, self.manager.sid),
                 )
                 for intent in abandoned:
                     self.store.db.execute(

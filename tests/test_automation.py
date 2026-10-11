@@ -640,3 +640,53 @@ def test_activation_refuses_account_trading_disabled(runtime):
     service.client._http._transport = httpx.MockTransport(disabled)
     with pytest.raises(TestnetError, match="ACCOUNT_TRADING_DISABLED"):
         service.evidence()
+
+
+def test_activation_preserves_inactive_session_unsubmitted_history(runtime):
+    service, *_ = runtime
+    token = prepare(runtime)
+    historical = {**service.store.session(), "id": "historical", "active": 0}
+    columns = ",".join(historical)
+    placeholders = ",".join("?" for _ in historical)
+    service.store.db.execute(
+        f"INSERT INTO testnet_sessions({columns}) VALUES({placeholders})",
+        tuple(historical.values()),
+    )
+    cid = "e01_historical"
+    service.store.db.execute(
+        "INSERT INTO order_intents VALUES(?,?,?,?,?,?,?,?,?,NULL,NULL)",
+        (
+            cid,
+            "historical",
+            service.clock(),
+            "BTCUSDT",
+            "BUY",
+            "0.000001",
+            "1000",
+            ".001",
+            "INTENT_CREATED",
+        ),
+    )
+    service.store.db.execute(
+        "INSERT INTO signal_receipts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "historical-key",
+            "historical-hash",
+            "historical",
+            T1,
+            "BTCUSDT",
+            0,
+            "INTENT_CREATED",
+            cid,
+            "1",
+            "1000",
+            "1000",
+            service.clock(),
+            "SIMULATED_TEST",
+        ),
+    )
+    command(service, "on", token=token)
+    assert (
+        service.store.rows("SELECT state FROM order_intents WHERE client_id=?", (cid,))[0]["state"]
+        == "INTENT_CREATED"
+    )
