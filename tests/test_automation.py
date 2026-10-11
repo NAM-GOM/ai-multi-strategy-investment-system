@@ -410,6 +410,7 @@ def test_get_preflight_copy_preserves_original_gates_and_all_rows(runtime):
         acceptance_path=acceptance,
         clock=lambda: clock[0],
         host=False,
+        quote_provider=service.quotes,
     )
     assert result["state"] == "ACTIVATION_PREFLIGHT_PASS"
     assert result["activation_token"] == digest(service.evidence())
@@ -430,6 +431,7 @@ def test_get_copy_cannot_manufacture_missing_c(runtime):
             acceptance_path=acceptance,
             clock=lambda: clock[0],
             host=False,
+            quote_provider=service.quotes,
         )
     assert not service.store.rows("SELECT * FROM execution_gates WHERE gate='C'")
 
@@ -725,3 +727,41 @@ def test_capped_quantity_is_below_ceiling_even_at_high_precision(price):
     notional_guard(qty, price)
     with localcontext(prec=80):
         assert qty * Decimal(price) <= Decimal("8.31")
+
+
+def test_activation_preflight_rejects_owned_partial_fill_dust(runtime):
+    service, exchange, clock, _, _, acceptance, handler = runtime
+    activate(runtime)
+    next_bar(runtime)
+    cid = service.tick()["submissions"][0]["client_id"]
+    exchange.fill(cid, "0.000004")
+    service.manager.reconcile()
+    service.control.off()
+    before = list(service.store.db.iterdump())
+    with pytest.raises(TestnetError, match="MIN_NOTIONAL"):
+        service.evidence()
+    with pytest.raises(TestnetError, match="MIN_NOTIONAL"):
+        online_readonly(
+            service.paths,
+            service.client.config,
+            transport=httpx.MockTransport(handler),
+            directory=service.directory,
+            acceptance_path=acceptance,
+            clock=lambda: clock[0],
+            quote_provider=service.quotes,
+            host=False,
+        )
+    assert before == list(service.store.db.iterdump())
+
+
+def test_activation_preflight_rejects_missing_protective_daily_capacity(runtime, monkeypatch):
+    service, exchange, *_ = runtime
+    activate(runtime)
+    next_bar(runtime)
+    cid = service.tick()["submissions"][0]["client_id"]
+    exchange.fill(cid, exchange.orders[cid]["origQty"])
+    service.manager.reconcile()
+    service.control.off()
+    monkeypatch.setattr(service.manager, "attempts", lambda: [{"notional": "8"}] * 3)
+    with pytest.raises(TestnetError, match="PROTECTION_BUDGET_UNAVAILABLE"):
+        service.evidence()

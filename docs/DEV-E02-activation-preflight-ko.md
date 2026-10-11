@@ -78,8 +78,11 @@ bash scripts/e02-runtime.sh status
 
 ACTIVATION_PREFLIGHT_PASS의 실제 evidence를 검토한다: M05 acceptance,
 현재 의존성 instance, 실제 ABC, 계좌 세션/수동 baseline, 1000 allocation,
-projection hash, original journal 상태, source 경로, cap 8.31. 토큰은 상태가
-바뀌면 무효다. **결과를 사용자에게 보고하고 ON 승인 후에만**:
+projection hash, original journal 상태, source 경로, cap 8.31. 실제 보유 수량과
+미체결 수량에 대한 최소 주문금액·잔고 및 남은 일일 보호 예산도 점검한다.
+부분 체결 잔여분을 보호할 수 없으면 HOLD다. 보호 예산과 당일 주문 기록은
+승인 토큰에도 포함하며 상태가 바뀌면 토큰은 무효다.
+**결과를 사용자에게 보고하고 ON 승인 후에만**:
 
 ```bash
 bash scripts/e02-runtime.sh on --confirm --token <activation_token>

@@ -2,6 +2,7 @@
 
 from decimal import ROUND_CEILING, ROUND_DOWN, Decimal, localcontext
 
+from trading_system.execution.config import T1
 from trading_system.execution.risk_engine import RiskEngine
 from trading_system.testnet.client import TestnetError
 from trading_system.testnet.risk import dec
@@ -70,3 +71,44 @@ class AutomationRisk(RiskEngine):
         ):
             raise TestnetError("PROTECTION_BUDGET_UNAVAILABLE")
         return {"reserved_exit_orders": exits, "marked_exposure": str(exposure)}
+
+
+def protection_budget(manager, quotes, info, balances):
+    """Same read-only protective-capacity check for activation and live monitoring."""
+    pending = manager.store.rows(
+        "SELECT i.* FROM order_intents i JOIN signal_receipts r USING(client_id) "
+        "WHERE r.strategy_id=? AND r.session_id=? AND i.state IN ('NEW','PARTIALLY_FILLED')",
+        (T1, manager.sid),
+    )
+    inventory = {p["symbol"]: dict(p) for p in manager.positions.positions()}
+    uncovered = {s: dict(p) for s, p in inventory.items()}
+    for order in pending:
+        observed = manager.store.rows(
+            "SELECT executed_qty FROM exchange_orders WHERE client_id=?", (order["client_id"],)
+        )[0]
+        remaining = dec(order["quantity"]) - dec(observed["executed_qty"])
+        p = inventory.setdefault(order["symbol"], {"symbol": order["symbol"], "quantity": "0"})
+        p["quantity"] = str(
+            max(dec(0), dec(p["quantity"]) + remaining * (1 if order["side"] == "BUY" else -1))
+        )
+        if order["side"] == "SELL" and order["symbol"] in uncovered:
+            actual = uncovered[order["symbol"]]
+            actual["quantity"] = str(max(dec(0), dec(actual["quantity"]) - remaining))
+    marks = {s: manager._reference(s, manager.paths.market).price for s in inventory}
+    attempts = manager.attempts()
+    budget = manager.risk.reserve_exit_budget(attempts, list(inventory.values()), marks)
+    # A hoped-for later fill cannot hide currently unprotectable partial-fill dust.
+    for p in [*inventory.values(), *uncovered.values()]:
+        if dec(p["quantity"]) > 0:
+            symbol = p["symbol"]
+            manager.risk.validate(
+                symbol,
+                "SELL",
+                manager.risk.capped(p["quantity"], quotes[symbol].bid),
+                quotes[symbol].bid,
+                info,
+                balances,
+                [],
+                attempts,
+            )
+    return budget

@@ -20,7 +20,7 @@ from trading_system.testnet.client import TestnetError
 
 from .control import Control
 from .gates import allocation, baseline, gate_evidence
-from .policy import CAPITAL, ORDER_CAP
+from .policy import CAPITAL, ORDER_CAP, AutomationRisk, protection_budget
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -99,7 +99,7 @@ def writer_permissions(path):
             raise TestnetError("E02_EXCLUSIVE_WRITER_PERMISSIONS_REQUIRED")
 
 
-def activation_evidence(manager, paths, acceptance_path, *, host=True):
+def activation_evidence(manager, paths, acceptance_path, *, host=True, quotes=None):
     if host:
         writer_permissions(paths.execution)
         trusted = Path(acceptance_path)
@@ -113,7 +113,8 @@ def activation_evidence(manager, paths, acceptance_path, *, host=True):
     sources = frozen_sources()
     accepted = m05_acceptance(acceptance_path, paths)
     manager.guard()
-    if manager.client.request("GET", "/api/v3/account").get("canTrade") is not True:
+    account = manager.client.request("GET", "/api/v3/account")
+    if account.get("canTrade") is not True:
         raise TestnetError("ACCOUNT_TRADING_DISABLED")
     if manager.control.killed():
         raise TestnetError("E02_EMERGENCY_STOP")
@@ -136,6 +137,15 @@ def activation_evidence(manager, paths, acceptance_path, *, host=True):
         or point[0]["observer_path"] != str(paths.observer)
     ):
         raise TestnetError("ROUTER_SOURCE_CHANGED")
+    if not quotes or set(quotes) != {"BTCUSDT", "ETHUSDT", "SOLUSDT"}:
+        raise TestnetError("E02_PREFLIGHT_QUOTES_REQUIRED")
+    for symbol, quote in quotes.items():
+        reference = manager._reference(symbol, paths.market)
+        if quote.symbol != symbol:
+            raise TestnetError("INVALID_TESTNET_QUOTE")
+        manager.risk.prices(quote, reference.price, reference.received_at_ms, manager.clock())
+    info = manager.client.request("GET", "/api/v3/exchangeInfo")
+    protection = protection_budget(manager, quotes, info, account["balances"])
     # Stable evidence fields; repeated GET reconciliation timestamps do not change approval.
     value = {
         "session_id": manager.sid,
@@ -154,6 +164,11 @@ def activation_evidence(manager, paths, acceptance_path, *, host=True):
         "dependencies": {r: health[r]["instance"] for r in health},
         "capital": str(CAPITAL),
         "order_cap": str(ORDER_CAP),
+        "protection_budget": protection,
+        "daily_attempts": [
+            {k: a[k] for k in ("client_id", "attempted_ms", "notional", "state")}
+            for a in manager.attempts()
+        ],
     }
     return value
 
@@ -205,6 +220,7 @@ def online_readonly(
             store = ExecutionStore(copy)
             try:
                 manager = OrderManager(client, store, clock=clock)
+                manager.risk = AutomationRisk(manager.safety)
                 manager.control = Control(directory or Path(copy).parent / "control", clock=clock)
                 manager.paths = paths
                 original_gates = store.rows("SELECT * FROM execution_gates")
@@ -227,11 +243,10 @@ def online_readonly(
                     "original_journal_modified": False,
                     "classification": "SIMULATED_TEST" if transport else "ACTUAL_TESTNET_GET",
                 }
+                quotes = None
                 if quote_provider:
                     quotes = quote_provider()
                     from trading_system.persistence.repository import MarketRepository
-
-                    from .policy import AutomationRisk
 
                     with MarketRepository(paths.market) as market:
                         for symbol, quote in quotes.items():
@@ -243,7 +258,9 @@ def online_readonly(
                             )
                     result["testnet_quotes"] = "FRESH_FIXED_HOST_WS"
                 if acceptance_path is not None:
-                    evidence = activation_evidence(manager, paths, acceptance_path, host=host)
+                    evidence = activation_evidence(
+                        manager, paths, acceptance_path, host=host, quotes=quotes
+                    )
                     result.update(
                         activation_token=digest(evidence),
                         activation_evidence=evidence,

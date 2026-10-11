@@ -22,7 +22,7 @@ from trading_system.testnet.risk import dec
 from .control import Control
 from .gates import allocation, baseline, gate_evidence
 from .manager import AutomationManager
-from .policy import CAPITAL
+from .policy import CAPITAL, protection_budget
 from .preflight import activation_evidence, frozen_sources, operator_review, writer_permissions
 
 
@@ -126,7 +126,11 @@ class Executor:
 
     def evidence(self):
         return activation_evidence(
-            self.manager, self.paths, self.acceptance_path, host=self.host_checks
+            self.manager,
+            self.paths,
+            self.acceptance_path,
+            host=self.host_checks,
+            quotes=self.quotes(),
         )
 
     def phase_a(self):
@@ -359,42 +363,7 @@ class Executor:
         )
 
     def protection_budget(self, quotes, info, balances):
-        # Pending BUY remainder needs future exit capacity. An already submitted SELL
-        # covers only its unfilled quantity and already consumes a daily attempt.
-        inventory = {p["symbol"]: dict(p) for p in self.manager.positions.positions()}
-        uncovered = {s: dict(p) for s, p in inventory.items()}
-        for order in self.pending_orders():
-            observed = self.store.rows(
-                "SELECT executed_qty FROM exchange_orders WHERE client_id=?", (order["client_id"],)
-            )[0]
-            remaining = dec(order["quantity"]) - dec(observed["executed_qty"])
-            p = inventory.setdefault(order["symbol"], {"symbol": order["symbol"], "quantity": "0"})
-            p["quantity"] = str(
-                max(dec(0), dec(p["quantity"]) + remaining * (1 if order["side"] == "BUY" else -1))
-            )
-            if order["side"] == "SELL" and order["symbol"] in uncovered:
-                actual = uncovered[order["symbol"]]
-                actual["quantity"] = str(max(dec(0), dec(actual["quantity"]) - remaining))
-        marks = {s: self.manager._reference(s, self.paths.market).price for s in inventory}
-        budget = self.manager.risk.reserve_exit_budget(
-            self.manager.attempts(), list(inventory.values()), marks
-        )
-        # A hoped-for later fill cannot hide currently unprotectable partial-fill dust.
-        for p in [*inventory.values(), *uncovered.values()]:
-            if dec(p["quantity"]) > 0:
-                symbol = p["symbol"]
-                # Do not issue a test/order here; prove that a capped exit passes current filters.
-                self.manager.risk.validate(
-                    symbol,
-                    "SELL",
-                    self.manager.risk.capped(p["quantity"], quotes[symbol].bid),
-                    quotes[symbol].bid,
-                    info,
-                    balances,
-                    [],
-                    self.manager.attempts(),
-                )
-        return budget
+        return protection_budget(self.manager, quotes, info, balances)
 
     def tick(self):
         for path in self.control.pending():
