@@ -272,6 +272,8 @@ class Executor:
             self.control.off()
             return self.manager.reconcile()  # GET only; never clears real hold/kill.
         if command == "on":
+            if self.control.mode()["enabled"]:
+                raise TestnetError("E02_ACTIVATION_REQUIRES_OFF")
             if not self.client.config.trading_enabled:
                 raise TestnetError("E02_MUTATIONS_NOT_PROVISIONED")
             epoch = self.control.mode()["epoch"]
@@ -286,6 +288,21 @@ class Executor:
                     "SELECT coalesce(max(rowid),0) FROM signal_decisions"
                 ).fetchone()[0]
             with self.store.transaction():
+                abandoned = self.store.rows(
+                    "SELECT i.client_id FROM order_intents i JOIN signal_receipts r USING(client_id) "
+                    "WHERE i.attempted_ms IS NULL AND i.state IN "
+                    "('INTENT_CREATED','RISK_APPROVED','VALIDATED') AND r.strategy_id=?",
+                    (T1,),
+                )
+                for intent in abandoned:
+                    self.store.db.execute(
+                        "UPDATE order_intents SET state='INTENT_ABANDONED' WHERE client_id=?",
+                        (intent["client_id"],),
+                    )
+                if abandoned:
+                    self.store.event(
+                        self.manager.sid, self.clock(), "E02_OLD_UNSUBMITTED_ABANDONED", abandoned
+                    )
                 self.store.db.execute(
                     "UPDATE router_checkpoints SET activated_ms=?,last_rowid=? WHERE session_id=?",
                     (self.clock(), maximum, self.manager.sid),

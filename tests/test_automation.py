@@ -625,3 +625,18 @@ def test_db_failure_blocks_new_orders(runtime):
     assert service.tick()["state"] == "HOLD"
     assert not service.control.mode()["enabled"]
     assert exchange.post_count == 1
+
+
+def test_activation_refuses_account_trading_disabled(runtime):
+    service, _, _, _, _, _, handler = runtime
+    prepare(runtime)
+
+    def disabled(request):
+        response = handler(request)
+        if request.url.path == "/api/v3/account":
+            return httpx.Response(200, json={**response.json(), "canTrade": False})
+        return response
+
+    service.client._http._transport = httpx.MockTransport(disabled)
+    with pytest.raises(TestnetError, match="ACCOUNT_TRADING_DISABLED"):
+        service.evidence()

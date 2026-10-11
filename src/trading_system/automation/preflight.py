@@ -65,8 +65,6 @@ def frozen_sources():
 
 
 def m05_acceptance(path, paths):
-    from trading_system.testnet.client import TestnetError
-
     try:
         value = json.loads(Path(path).read_text())
         if (
@@ -87,8 +85,6 @@ def m05_acceptance(path, paths):
 
 
 def writer_permissions(path):
-    from trading_system.testnet.client import TestnetError
-
     path = Path(path)
     if sys.platform != "linux" or not hasattr(os, "getuid"):
         raise TestnetError("NUC_WRITER_HANDOFF_NOT_VERIFIED")
@@ -120,16 +116,12 @@ def activation_evidence(manager, paths, acceptance_path, *, host=True):
     if manager.client.request("GET", "/api/v3/account").get("canTrade") is not True:
         raise TestnetError("ACCOUNT_TRADING_DISABLED")
     if manager.control.killed():
-        from trading_system.testnet.client import TestnetError
-
         raise TestnetError("E02_EMERGENCY_STOP")
     pending = manager.store.rows(
         "SELECT state FROM order_intents WHERE state IN "
         "('SUBMITTING','UNKNOWN_EXECUTION','CANCELING')"
     )
     if pending:
-        from trading_system.testnet.client import TestnetError
-
         raise TestnetError("UNKNOWN_EXECUTION")
     health = {r: require_health(paths, r, manager.clock()) for r in ("collector", "observer")}
     gates = gate_evidence(manager)
@@ -193,8 +185,6 @@ def online_readonly(
                     or original_session["fingerprint"]
                     != hashlib.sha256(config.api_key.encode()).hexdigest()
                 ):
-                    from trading_system.testnet.client import TestnetError
-
                     raise TestnetError("ACCOUNT_CHANGED_NEW_SESSION_REQUIRED")
                 if source.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                     raise ValueError("EXECUTION_DB_INTEGRITY")
