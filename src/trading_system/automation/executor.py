@@ -387,7 +387,7 @@ class Executor:
                 self.manager.risk.validate(
                     symbol,
                     "SELL",
-                    min(dec(p["quantity"]), self.manager.risk.max_order / quotes[symbol].bid),
+                    self.manager.risk.capped(p["quantity"], quotes[symbol].bid),
                     quotes[symbol].bid,
                     info,
                     balances,

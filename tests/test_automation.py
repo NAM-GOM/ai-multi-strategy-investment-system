@@ -1,7 +1,7 @@
 """SIMULATED_TEST only: actual Frozen calculations, SQLite and E01, MockTransport orders."""
 
 import sqlite3
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 import httpx
 import pytest
@@ -26,6 +26,7 @@ from trading_system.persistence.records import INTERVAL_MS, CandleRecord
 from trading_system.persistence.store import MarketStore, PersistenceError
 from trading_system.runtime.common import RuntimePaths, atomic_json, boot_id
 from trading_system.testnet.client import TestnetError
+from trading_system.testnet.risk import Order
 
 
 @pytest.fixture(autouse=True)
@@ -690,3 +691,35 @@ def test_activation_preserves_inactive_session_unsubmitted_history(runtime):
         service.store.rows("SELECT state FROM order_intents WHERE client_id=?", (cid,))[0]["state"]
         == "INTENT_CREATED"
     )
+
+
+@pytest.mark.parametrize(
+    "changes,error",
+    [
+        ({}, "DURABLE_ATTEMPT"),
+        ({"symbol": "ETHUSDT"}, "HTTP_INTENT_MISMATCH"),
+        ({"side": "SELL"}, "HTTP_INTENT_MISMATCH"),
+    ],
+)
+def test_raw_http_cannot_bypass_durable_intent_or_order_identity(runtime, changes, error):
+    service, exchange, *_ = runtime
+    activate(runtime)
+    next_bar(runtime)
+    cid = next(r["client_id"] for r in service.route() if r["state"] == "INTENT_CREATED")
+    service.manager.check(cid, confirm_test=True)
+    intent = service.manager.intent(cid)
+    order = Order(
+        intent["symbol"], intent["side"], Decimal(intent["quantity"]), Decimal(intent["price"])
+    )
+    params = {**order.params(cid), **changes}
+    with pytest.raises(TestnetError, match=error):
+        service.client.request("POST", "/api/v3/order", params, confirm=True)
+    assert exchange.post_count == 1
+
+
+@pytest.mark.parametrize("price", ["65000.03", "65000.07", "65000.11"])
+def test_capped_quantity_is_below_ceiling_even_at_high_precision(price):
+    qty = AutomationRisk().capped("1", price)
+    notional_guard(qty, price)
+    with localcontext(prec=80):
+        assert qty * Decimal(price) <= Decimal("8.31")

@@ -1,6 +1,6 @@
 """Tighter execution ceilings over the unchanged Frozen/E01 risk engine."""
 
-from decimal import ROUND_CEILING, Decimal
+from decimal import ROUND_CEILING, ROUND_DOWN, Decimal, localcontext
 
 from trading_system.execution.risk_engine import RiskEngine
 from trading_system.testnet.client import TestnetError
@@ -22,9 +22,17 @@ class AutomationRisk(RiskEngine):
     max_order = ORDER_CAP
     # Retain, never relax, the inherited 3/day, 40 USDT/day, one open order.
 
+    def capped(self, quantity, price):
+        price = dec(price)
+        if price <= 0:
+            raise TestnetError("NON_POSITIVE_ORDER")
+        with localcontext(rounding=ROUND_DOWN):
+            ceiling = self.max_order / price
+        return min(dec(quantity), ceiling)
+
     def size(self, decision, manager, quote, references):
         side, quantity, price = super().size(decision, manager, quote, references)
-        quantity = min(quantity, self.max_order / price)
+        quantity = self.capped(quantity, price)
         notional_guard(quantity, price)
         return side, quantity, price
 

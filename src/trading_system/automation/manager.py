@@ -105,6 +105,9 @@ class AutomationManager(OrderManager):
         if request.method == "DELETE":
             if not self.canceling:
                 raise TestnetError("E02_CANCEL_NOT_APPROVED")
+            expected = self._order_query(self.intent(self.canceling))
+            if any(str(params.get(k)) != str(v) for k, v in expected.items()):
+                raise TestnetError("E02_CANCEL_INTENT_MISMATCH")
             return
         if request.url.path not in ("/api/v3/order", "/api/v3/order/test"):
             raise TestnetError("NETWORK_POLICY_DENIED")
@@ -119,10 +122,24 @@ class AutomationManager(OrderManager):
             self.enabled()
         notional_guard(params["quantity"], params["price"])
         intent = self.intent(cid)
-        if dec(params["quantity"]) != dec(intent["quantity"]) or dec(params["price"]) != dec(
-            intent["price"]
+        if (
+            dec(params["quantity"]) != dec(intent["quantity"])
+            or dec(params["price"]) != dec(intent["price"])
+            or any(
+                params.get(k) != v
+                for k, v in {
+                    "symbol": intent["symbol"],
+                    "side": intent["side"],
+                    "type": "LIMIT",
+                    "timeInForce": "GTC",
+                }.items()
+            )
         ):
             raise TestnetError("E02_HTTP_INTENT_MISMATCH")
+        if request.url.path == "/api/v3/order" and (
+            intent["state"] != "SUBMITTING" or intent["attempted_ms"] is None
+        ):
+            raise TestnetError("E02_DURABLE_ATTEMPT_REQUIRED")
         # Recheck age after hash/ownership work at the last HTTP hook.
         self._send_guard(cid)
 
@@ -150,9 +167,7 @@ class AutomationManager(OrderManager):
                 return [
                     dict(
                         p,
-                        quantity=str(
-                            min(dec(p["quantity"]), self_risk.max_order / quotes[p["symbol"]].bid)
-                        ),
+                        quantity=str(self_risk.capped(p["quantity"], quotes[p["symbol"]].bid)),
                     )
                     for p in real.positions(strategy)
                 ]
