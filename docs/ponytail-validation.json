@@ -1,0 +1,120 @@
+{
+  "status": "PONYTAIL_INSTALLED_WITH_DISCOVERY_FLAG",
+  "scope": "Approved option A: instruction files, Python 3.14.7, offline regression and navigation checks",
+  "branch": "chore/ponytail-skills",
+  "upstream_commit": "9cc65d03aa2da1db7121b912d03596409ee340b8",
+  "base_commit": "1b1bf582f34a526d9204a084dc4573c79efa124e",
+  "protected_files_unchanged": true,
+  "protected_file_count": 48,
+  "pytest_before": {
+    "passed": 245,
+    "skipped": 8,
+    "failed": 0,
+    "executed": true
+  },
+  "pytest_after": {
+    "passed": 245,
+    "skipped": 8,
+    "failed": 0,
+    "executed": true
+  },
+  "ruff_before": "PASS",
+  "ruff_after": "PASS",
+  "format_before": "PASS",
+  "format_after": "PASS",
+  "navigation": [
+    {
+      "task": "M02-price-validation",
+      "reference_files": [
+        "src/trading_system/market_data/parser.py",
+        "src/trading_system/market_data/models.py"
+      ],
+      "before_matching_lines": 24,
+      "after_matching_lines": 24,
+      "results_identical": true,
+      "normalized_results_sha256": "f558014d9163520cf60d272574511e12e10ed8aa8fb458ff01f43f087b8f2738",
+      "elapsed_after_ms": 2.788
+    },
+    {
+      "task": "M02-finalization",
+      "reference_files": [
+        "src/trading_system/market_data/parser.py",
+        "src/trading_system/market_data/state.py"
+      ],
+      "before_matching_lines": 7,
+      "after_matching_lines": 7,
+      "results_identical": true,
+      "normalized_results_sha256": "8d8325589ae4a59e4dbdd81039d4197965ab315d50c21d21abc5858c223cba84",
+      "elapsed_after_ms": 2.343
+    },
+    {
+      "task": "M02-reconnect-health",
+      "reference_files": [
+        "src/trading_system/binance/websocket.py",
+        "src/trading_system/market_data/health.py"
+      ],
+      "before_matching_lines": 28,
+      "after_matching_lines": 28,
+      "results_identical": true,
+      "normalized_results_sha256": "d4851fdeef55b03e5aba138e1cb9ea9c3aa676aeee1745dc7aa142dea635aaf0",
+      "elapsed_after_ms": 2.415
+    },
+    {
+      "task": "M03-commit-before-ack",
+      "reference_files": [
+        "src/trading_system/persistence/writer.py",
+        "src/trading_system/persistence/store.py"
+      ],
+      "before_matching_lines": 8,
+      "after_matching_lines": 8,
+      "results_identical": true,
+      "normalized_results_sha256": "4b1c63abc4e27bf4d76ee1ae1daa945bedccb1066ec248c467183295bb0f9d9a",
+      "elapsed_after_ms": 3.28
+    },
+    {
+      "task": "M03-gap-conflict-provenance",
+      "reference_files": [
+        "src/trading_system/persistence/recovery.py",
+        "src/trading_system/persistence/store.py",
+        "src/trading_system/persistence/records.py"
+      ],
+      "before_matching_lines": 38,
+      "after_matching_lines": 38,
+      "results_identical": true,
+      "normalized_results_sha256": "20d0ca687d000b512d0ee2ee94da3d99a1df9ad857d71bc62715eadef5850245",
+      "elapsed_after_ms": 2.401
+    },
+    {
+      "task": "M03-online-backup",
+      "reference_files": [
+        "src/trading_system/persistence/repository.py"
+      ],
+      "before_matching_lines": 14,
+      "after_matching_lines": 14,
+      "results_identical": true,
+      "normalized_results_sha256": "87f99ca33f6da3d620cfbccb76d2440702735f98fa48a1bf27d03fb9c52e7fef",
+      "elapsed_after_ms": 3.195
+    }
+  ],
+  "navigation_results_identical": true,
+  "comparison_method": "rg results normalized by path/line against unchanged pre-installation SHA-pinned snapshot; no model benchmark",
+  "model_semantic_accuracy_benchmark": "NOT_PERFORMED",
+  "native_skill_discovery": "BLOCKED_READ_ONLY_CODEX_HOME_INSTALLATION_ID",
+  "managed_executor_skill_discovery": "NOT_DISCOVERED_IN_CURRENT_SESSION",
+  "skill_instructions_read_and_applied_manually": true,
+  "hooks_installed": false,
+  "serena_installed": false,
+  "environment_draft": {
+    "status": "saved",
+    "requires_publish": true,
+    "published": false,
+    "fresh_environment_restore": "NOT_VERIFIED",
+    "unrelated_settings_preserved": true
+  },
+  "security_check": {
+    "new_file_credential_patterns": "PASS",
+    "tracked_env_or_sqlite_artifacts": "NONE",
+    "external_installers_executed": false,
+    "auth_changed": false
+  }
+}

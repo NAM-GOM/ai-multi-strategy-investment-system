@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ponytail — reviewed project instructions"
+  short_description: "Minimal complete changes with DEV-M01/M02/M03 safety conditions"
+policy:
+  allow_implicit_invocation: false
