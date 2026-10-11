@@ -104,6 +104,7 @@ class WebSocketMonitor:
         self.candle_counts = dict.fromkeys(SYMBOLS, 0)
         self.blocked_environment = self.fatal_error = self.final_healthy = False
         self.normal_shutdown = False
+        self.final_data_fresh = False
         self.started = self.monotonic()
         self.last_error_category: str | None = None
         self.last_http_status: int | None = None
@@ -164,6 +165,7 @@ class WebSocketMonitor:
             "http_status": self.last_http_status,
             "normal_shutdown": self.normal_shutdown,
             "final_healthy": self.final_healthy,
+            "final_data_fresh": self.final_data_fresh,
             "all_symbols_observed": all(
                 self.price_counts[s] and self.candle_counts[s] for s in SYMBOLS
             ),
@@ -284,11 +286,11 @@ class WebSocketMonitor:
                                     break
                             else:
                                 stale_since = None
-                        self.final_healthy = (
+                        self.final_data_fresh = (
                             self.health.evaluate(self.monotonic(), self.utc_now())
                             == ConnectionState.CONNECTED
-                            and not self.market.data_loss
                         )
+                        self.final_healthy = self.final_data_fresh and not self.market.data_loss
                         healthy_for_reset = self.final_healthy
                 except DataLossError:
                     self.fatal_error = True
@@ -301,6 +303,7 @@ class WebSocketMonitor:
                         == ConnectionState.CONNECTED
                     )
                     self.final_healthy = False
+                    self.final_data_fresh = False
                     # Never include str(error), traceback, proxy headers or frame contents.
                     response = getattr(error, "response", None)
                     status = getattr(response, "status_code", None)
@@ -349,6 +352,7 @@ class WebSocketMonitor:
                 ):
                     self.backoff.reset()
                 self.final_healthy = False
+                self.final_data_fresh = False
                 self.health.state = ConnectionState.RECONNECTING
                 delay = self.backoff.next_delay()
                 logger.info("reconnect attempt backoff_seconds=%.3f", delay)

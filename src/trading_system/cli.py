@@ -77,11 +77,43 @@ def run_account(client: BinanceClient) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Read-only Binance Spot REST and WebSocket data")
-    parser.add_argument("command", choices=("public", "account", "all", "stream"))
-    parser.add_argument("--duration", type=float, default=120)
+    parser.add_argument(
+        "command",
+        choices=(
+            "public",
+            "account",
+            "all",
+            "stream",
+            "db-init",
+            "collect",
+            "db-status",
+            "db-verify",
+            "db-backup",
+            "db-restore",
+        ),
+    )
+    parser.add_argument("--duration", type=float)
     parser.add_argument("--ws-base-url", default="wss://data-stream.binance.vision")
     parser.add_argument("--report-file")
+    parser.add_argument("--db-path", default="data/market_data.sqlite")
+    parser.add_argument("--bootstrap-days", type=int, default=7)
+    parser.add_argument("--snapshot-seconds", type=int, default=60)
+    parser.add_argument("--retention-days", type=int, default=30)
+    parser.add_argument("--recovery-max-days", type=int, default=365)
+    parser.add_argument("--backup-path")
     args = parser.parse_args(argv)
+    if args.command in ("db-init", "collect", "db-status", "db-verify", "db-backup", "db-restore"):
+        from trading_system.persistence.cli import run_database_cli
+
+        try:
+            configure_logging()
+        except OSError:
+            print("Cannot initialize logs/app.log. Check directory permissions.")
+            return 2
+        logger.info("program start command=%s", args.command)
+        code = run_database_cli(args)
+        logger.info("program exit code=%d", code)
+        return code
     if args.command == "stream":
         # Do not load .env or account credentials for public WebSocket operation.
         from trading_system.binance.websocket import run_stream_cli
@@ -92,7 +124,9 @@ def main(argv: list[str] | None = None) -> int:
             print("Cannot initialize logs/app.log. Check directory permissions.")
             return 2
         logger.info("program start command=stream")
-        code = run_stream_cli(args.duration, args.ws_base_url, args.report_file)
+        code = run_stream_cli(
+            120 if args.duration is None else args.duration, args.ws_base_url, args.report_file
+        )
         logger.info("program exit code=%d", code)
         return code
     try:

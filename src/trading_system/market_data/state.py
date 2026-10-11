@@ -96,6 +96,20 @@ class MarketState:
         logger.error("closed candle continuity gap symbol=%s; no backfill performed", symbol)
 
     def drain_closed(self) -> list[CandleEvent]:
-        events = list(self.closed_events)
-        self.closed_events.clear()
-        return events
+        events = self.peek_closed()
+        self.ack_closed(events)
+        return list(events)
+
+    def peek_closed(self, limit: int | None = None) -> tuple[CandleEvent, ...]:
+        """Delivery stays pending until a consumer explicitly acknowledges committed events."""
+        from itertools import islice
+
+        if limit is not None and (type(limit) is not int or limit < 1):
+            raise ValueError("Peek limit must be a positive integer.")
+        return tuple(islice(self.closed_events, limit))
+
+    def ack_closed(self, events: tuple[CandleEvent, ...]) -> None:
+        if events and tuple(events) != self.peek_closed(len(events)):
+            raise ValueError("ACK must match the pending queue prefix.")
+        for _ in events:
+            self.closed_events.popleft()

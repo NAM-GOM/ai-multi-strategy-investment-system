@@ -90,7 +90,20 @@ def test_exactly_six_streams_and_server_shutdown():
         assert event(payload) == ServerShutdown(BASE)
 
 
-@pytest.mark.parametrize("raw", ["{", "[]", "null", "1", "{}", b"\xff", "x" * 65537, None])
+@pytest.mark.parametrize(
+    "raw",
+    ["{", "[]", "null", "1", "{}", b"\xff", "x" * 65537, None],
+    ids=(
+        "broken-object",
+        "array",
+        "null",
+        "number",
+        "empty-object",
+        "invalid-utf8",
+        "oversized-frame",
+        "wrong-type",
+    ),
+)
 def test_invalid_json_or_frame_rejected_safely(raw):
     with pytest.raises(ParseError, match="Invalid public WebSocket message"):
         parse_message(raw, BASE)
