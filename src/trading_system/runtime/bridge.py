@@ -147,6 +147,17 @@ class PreviewBridge:
                     destination.close()
             store = ExecutionStore(target)
             try:
+                # Do not let reconciliation of an expendable copy clear restart
+                # uncertainty present in the real journal's snapshot.
+                original_session = store.session()
+                original_unknown = store.rows(
+                    "SELECT state FROM order_intents WHERE state IN "
+                    "('SUBMITTING','UNKNOWN_EXECUTION','CANCELING')"
+                )
+                if not original_session:
+                    raise TestnetError("EXISTING_E01_SESSION_REQUIRED")
+                if original_session["kill"] or original_session["hold"] or original_unknown:
+                    raise TestnetError("EXECUTION_HOLD_KILL_OR_UNKNOWN")
                 if not online:
                     # Offline Preview must not need the account key to open an
                     # already-bound E01 ledger. Rebind only the expendable copy;

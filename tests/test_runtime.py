@@ -617,3 +617,14 @@ def test_invalid_decision_hash_latches_before_preview_checkpoint_moves(runtime):
         preview(runtime)
     assert json.loads(bridge.hold_path.read_text())["category"] == "SIGNAL_HASH_MISMATCH"
     assert before == bridge.cursor_path.read_bytes() and exchange.post_count == 0
+
+
+def test_online_preview_cannot_resolve_real_journal_unknown_in_temporary_copy(runtime):
+    paths, _, _, exchange, _, store, _, _, bridge = runtime
+    store.db.execute("UPDATE order_intents SET state='SUBMITTING'")
+    before = ledger_dump(paths.execution), bridge.cursor_path.read_bytes()
+    request_count = len(exchange.requests)
+    with pytest.raises(TestnetError, match="EXECUTION_HOLD_KILL_OR_UNKNOWN"):
+        preview(runtime, online=True, capital=None)
+    assert len(exchange.requests) == request_count
+    assert before == (ledger_dump(paths.execution), bridge.cursor_path.read_bytes())

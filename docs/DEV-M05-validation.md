@@ -34,7 +34,7 @@ newly verified M05 FACT or W04 strategy performance.
 | --- | --- |
 | Python/dependencies | CPython 3.14.7, uv sync --frozen --group dev PASS; uv.lock unchanged |
 | Existing E01 + original freeze suite | 125 passed in 105.24s; MockTransport only |
-| New M05 tests | 39 passed in 87.14s; SIMULATED_TEST, zero real HTTP/order calls |
+| New M05 tests | 40 passed in 88.32s; SIMULATED_TEST, zero real HTTP/order calls |
 | Full regression, final implementation | Pending final command completion; updated before delivery |
 | Ruff check / format | PASS; 90 files formatted/checked (Frozen exclusion unchanged) |
 | Offline preflight | PASS, 72 protected files, no network, both unlocks disabled |
@@ -61,6 +61,8 @@ against explicitly simulated WS candles and Mock Testnet. They verify:
   UNKNOWN_EXECUTION, dependency restart during risk evaluation and account mismatch.
 - API 429/backoff failure retains cursor and original journal. GET-only read-only
   Testnet mock reconciliation; non-GET denied at both client and HTTP boundaries.
+- Original journal UNKNOWN/SUBMITTING is checked before any online reconciliation;
+  a temporary-copy recovery cannot clear real restart uncertainty.
 - Persistent reconciliation/reset hold survives a new Bridge instance. Offline
   routing needs no bound account key and never claims account identity verification.
 - OS writer lease denies duplicates and releases after a real child process crash.
