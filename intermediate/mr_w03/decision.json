@@ -1,0 +1,37 @@
+{
+  "decision": "HOLD",
+  "pass_gates": {
+    "BASELINE_POSITIVE": false,
+    "TEMPORAL_2_OF_3": true,
+    "ASSET_2_OF_3": true,
+    "NEIGHBOR_6_OF_8": false,
+    "EACH_FAMILY_1_OF_2": true,
+    "NEIGHBOR_MDD_1_5X": true,
+    "MODERATE_POSITIVE": false,
+    "YEAR_TOP2_MAX_80": false,
+    "ASSET_MAX_80": false
+  },
+  "reject_gates": {
+    "PERSISTENT_LOSS": false,
+    "JOINT_FRAGILITY": false,
+    "SEVERE_RISK": false
+  },
+  "low_sample": false,
+  "positive_neighbors": 4,
+  "positive_windows": 2,
+  "positive_assets": 2,
+  "year_top2_positive_share": 0.8290259356328957,
+  "max_positive_asset_share": 0.8744618887413393,
+  "family_positive_counts": {
+    "ema": 1,
+    "period": 1,
+    "sigma": 1,
+    "stop_atr": 1
+  },
+  "freeze_sha256": "05093a863a309412e13d028928dd1791ece0c759f8e0deb8732bdb3cb33a281c",
+  "freeze_json_sha256": "d5069dfabfb1374d75bb742de6ccef63f5ee449b1d9a38cc46d0b51dc4676b22",
+  "script_sha256": "1e24300bca2b3dc66d9c91e83f366e5c457fda1353c9d760ee66fedd3fa1a63c",
+  "stop2024_days": 18,
+  "multi_asset_stop2024_days": 7,
+  "2024_stop_count": 25
+}

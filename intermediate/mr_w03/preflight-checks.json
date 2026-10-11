@@ -1,0 +1,14 @@
+{
+  "status": "MR_W03_PREFLIGHT_PASS",
+  "freeze_sha256": "05093a863a309412e13d028928dd1791ece0c759f8e0deb8732bdb3cb33a281c",
+  "completed_utc": "2026-10-10T14:39:13.878845+00:00",
+  "checks": [
+    "36 existing MR-W01/MR-W02 tests PASS",
+    "all 300 baseline trade rows reproduced",
+    "MR-W02 cost/PnL/stop count reproduced",
+    "Baseline indicator harness exact parity PASS",
+    "Stop-parameter harness exact full trade/equity parity PASS",
+    "6 adverse gap/entry Stop tests across 2/2.5/3 ATR PASS",
+    "24 OAT prefix invariance checks PASS"
+  ]
+}

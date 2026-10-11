@@ -1,0 +1,13 @@
+{
+  "artifact_git_commit": "50281aabbc91816dab7bd26067eddeffa7660474",
+  "source_git_commit": "bc2ca95d98c4d3e0e7bf3ca9e5e52f545848447e",
+  "bundle_sha256": "ea85ec35d337cd77e8a149f4514fa21d4f52d37114115fa3e37d639779b09d1b",
+  "payload_manifest_sha256": "e7f9e2da0ad51ed4b8987b9a5d9f51ddc92bbbf9c0eb65e16b8fe97454a3910b",
+  "report_sha256": {
+    "MR-W03_final_audit.md": "f2077d3d16aa861cada71d52b7e67bb7a6a36efeb305caabfeb5caf232f7ee12",
+    "MR-W03_registry_handoff.md": "8f263ba20f43aac76c4e1ffa6d17a846be2b443d5c6dc8ff96d53e77ac86781f",
+    "MR-W03_specification_deviation.md": "bc444db4dd68ca11f58a99d47dbe55c9c28815ccda6384098144d931de39465d"
+  },
+  "immutability": "content-addressed git objects + byte hashes; no WORM service",
+  "registry_status": "NOT_APPLIED"
+}

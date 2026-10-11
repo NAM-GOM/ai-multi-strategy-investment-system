@@ -1,0 +1,103 @@
+{
+  "cycle": "MR-W03",
+  "strategy": "meanrev_bollinger_v0.1",
+  "source_commit": "bc2ca95d98c4d3e0e7bf3ca9e5e52f545848447e",
+  "baseline": {
+    "period": 20,
+    "sigma": 2,
+    "ema": 200,
+    "stop_atr": 2.5,
+    "atr_period": 20,
+    "fee_bps": 10,
+    "slippage_bps": 5
+  },
+  "oat": {
+    "period": [
+      16,
+      24
+    ],
+    "sigma": [
+      1.6,
+      2.4
+    ],
+    "ema": [
+      160,
+      240
+    ],
+    "stop_atr": [
+      2,
+      3
+    ]
+  },
+  "cost_scenarios": [
+    {
+      "id": "BASELINE",
+      "fee": 10,
+      "slip": 5
+    },
+    {
+      "id": "MODERATE",
+      "fee": 10,
+      "slip": 10
+    },
+    {
+      "id": "SEVERE",
+      "fee": 20,
+      "slip": 20
+    }
+  ],
+  "windows": [
+    {
+      "id": "2020_2022",
+      "start": "2020-01-01T00:00:00Z",
+      "end": "2023-01-01T00:00:00Z"
+    },
+    {
+      "id": "2023_2024",
+      "start": "2023-01-01T00:00:00Z",
+      "end": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "2025_2026",
+      "start": "2025-01-01T00:00:00Z",
+      "end": "2027-01-01T00:00:00Z"
+    }
+  ],
+  "minimum_trades": {
+    "full": 100,
+    "window": 30,
+    "asset": 30
+  },
+  "pass": {
+    "baseline_positive": true,
+    "positive_windows": 2,
+    "positive_assets": 2,
+    "positive_neighbors": 6,
+    "positive_neighbors_each_family": 1,
+    "neighbor_mdd_max_ratio": 1.5,
+    "moderate_positive": true,
+    "max_positive_year_top2_share": 0.8,
+    "max_positive_asset_share": 0.8
+  },
+  "reject": {
+    "persistent_loss": {
+      "nonpositive_windows": 3,
+      "nonpositive_assets": 2,
+      "baseline_nonpositive": true
+    },
+    "joint_fragility": {
+      "nonpositive_neighbors": 6,
+      "both_nonpositive_families": 3,
+      "nonpositive_windows_or_assets": 2,
+      "baseline_nonpositive": true
+    },
+    "severe_risk": {
+      "baseline_mdd_abs": 0.2,
+      "neighbor_mdd_abs": 0.15,
+      "neighbor_mdd_ratio": 2
+    }
+  },
+  "priority": "PREFLIGHT_FAIL_OR_INSUFFICIENT=>HOLD; else REJECT gates any=>REJECT; else PASS all=>PASS; else HOLD",
+  "boundary": "continuous original state, no reset/liquidation at windows; equity (start,end] close marks anchored by previous mark; completed trades entry>=start AND exit<end, boundary trades excluded from trade ratios and counted separately; yearly exit-year all trade PnL separate",
+  "concentration": "full years 2021-2025 only; top2 positive years / sum positive years; assets positive net contributions / sum positive assets; signed losses separately"
+}
