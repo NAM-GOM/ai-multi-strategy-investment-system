@@ -559,7 +559,7 @@ def test_atr_stop_uses_owned_quantity_under_cap_and_preserves_daily_limits(runti
     prices["BTCUSDT"] = stop_price
     with MarketStore(service.paths.market) as market:
         market.connection.execute(
-            "UPDATE price_snapshots SET price=? WHERE symbol='BTCUSDT'", (str(stop_price),)
+            "UPDATE price_snapshots SET price_text=? WHERE symbol='BTCUSDT'", (str(stop_price),)
         )
         market.connection.commit()
     result = service.tick()
