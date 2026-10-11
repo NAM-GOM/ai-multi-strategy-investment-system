@@ -14,7 +14,7 @@ have not been performed. No operational PASS is claimed from mock tests, a sched
 - NUC read-only status reports gomi-mini; project scope is isolated development,
   deployment_enabled=false, network_enabled=false, production_paths_blocked=true.
   No operational release/DB/environment file was read or modified.
-- All 72 pre-existing src files and the original E01 freeze manifest are protected
+- All 71 pre-existing src files and the original E01 freeze manifest (72 files total) are protected
   by the additive M05 manifest. Frozen source/input audit hash remains
   `8508a1bd15d68b04fe0428c298330961859af88a9a26d565d23fcdf1d93bd38c`.
 - Collector/WS and Observer existing CLIs require finite positive duration. The
@@ -35,13 +35,21 @@ newly verified M05 FACT or W04 strategy performance.
 | Python/dependencies | CPython 3.14.7, uv sync --frozen --group dev PASS; uv.lock unchanged |
 | Existing E01 + original freeze suite | 125 passed in 105.24s; MockTransport only |
 | New M05 tests | 40 passed in 88.32s; SIMULATED_TEST, zero real HTTP/order calls |
-| Full regression, final implementation | Pending final command completion; updated before delivery |
+| Full regression, final implementation | 472 passed, 8 opt-in live skips in 224.77s; final source 1cfbdce |
 | Ruff check / format | PASS; 90 files formatted/checked (Frozen exclusion unchanged) |
 | Offline preflight | PASS, 72 protected files, no network, both unlocks disabled |
 | Shell syntax | bash -n both startup/preflight scripts PASS |
 | systemd-analyze verify | PASS with local transformed executable paths; no installation/start/reboot |
 | Git diff / source scope | No protected existing src edits; no force push or existing branch overwrite |
-| GitHub Ubuntu / Windows CI | Pending PR workflow; recorded below after observation |
+| GitHub Ubuntu / Windows CI | PASS both platforms: source 1cfbdce, run 38149014076; 472 passed / 8 skipped each |
+
+CI evidence: [workflow 38149014076](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/38149014076),
+implementation `1cfbdcecc3b6314563641cdb9bada52a73b02c39`. Ubuntu: 472 passed /
+8 skipped in 232.24s; Windows: 472 passed / 8 skipped in 318.19s. Both Ruff and
+format steps PASS; Ubuntu shell/systemd syntax step PASS. Normalized job/step
+metadata is preserved in [DEV-M05-ci.json](DEV-M05-ci.json). Subsequent evidence-only
+commits preserve the tested runtime, tests, lockfile and workflow; current PR Checks
+are the source of truth for their own final-HEAD CI results.
 
 The new tests cover real Frozen M04 calculation and actual SQLite transactions
 against explicitly simulated WS candles and Mock Testnet. They verify:
@@ -91,7 +99,7 @@ orders. No Testnet credentials were available to/used by this development runtim
 
 | Criterion | Evidence / remaining gate |
 | --- | --- |
-| M05-01 M03/M04 Frozen source unchanged | Offline PASS: 72 protected sources + original E01 freeze/reproduction |
+| M05-01 M03/M04 Frozen source unchanged | Offline PASS: 72 protected baseline files + original E01 freeze/reproduction |
 | M05-02 no 24H service limit | Offline PASS: one huge finite-horizon invocation + virtual 25H; real continuous NUC run pending |
 | M05-03 systemd startup/restart | Syntax PASS; actual install/start/restart NOT_TESTED |
 | M05-04 one Collector/Observer writer | OS leases PASS; separate account/filesystem/systemd enforcement awaiting deployment |
@@ -103,7 +111,7 @@ orders. No Testnet credentials were available to/used by this development runtim
 | M05-10 old manual buy preserved | Copy/DB immutability PASS; actual order 1507111 not independently re-read |
 | M05-11 NUC reboot recovery | Mock fresh-process/crash recovery PASS; NUC reboot NOT_TESTED |
 | M05-12 stop/kill/reconciliation fail closed | Offline PASS; actual service stop and recovery still pending |
-| M05-13 Windows/Linux CI | Pending observed workflow result |
+| M05-13 Windows/Linux CI | PASS: Ubuntu + Windows at implementation 1cfbdce; run 38149014076 |
 | M05-14 actual NUC smoke | BLOCKED: deployment disabled |
 | M05-15 no production order path | PASS: GET-only bridge; reused exact-host client; no runtime mutation command |
 | M05-16 T1/T2/T3/W04 unchanged | Offline PASS; no allocation, source or formal ledger changes |

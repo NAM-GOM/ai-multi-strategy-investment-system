@@ -12,8 +12,8 @@ Remote `dev-m04-strategy-observer` and local development base:
 `72a63e9329f0702fd90805f30cb342b0b6725fa0` is included. GitHub PR #7 is merged
 into that M04 branch at the base SHA. `main` remains `59df61d` at initial audit.
 The new branch is `dev-m05-nuc-runtime-testnet-bridge`; no existing branch is rewritten.
-`DEV-M05-source-manifest.json` protects all 72 existing source files plus the E01
-freeze manifest. The original E01 61-file freeze test remains unchanged.
+`DEV-M05-source-manifest.json` protects all 71 existing source files and the E01
+freeze manifest (72 files total). The original E01 61-file freeze test remains unchanged.
 
 The NUC connector returned `gomi-mini`, isolated-development-only scope,
 `deployment_enabled=false`, `network_enabled=false`, and production paths blocked.
