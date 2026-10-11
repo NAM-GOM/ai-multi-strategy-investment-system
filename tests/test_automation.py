@@ -488,7 +488,6 @@ def test_partial_fill_dust_reports_protection_hold(runtime):
     cid = service.tick()["submissions"][0]["client_id"]
     exchange.fill(cid, "0.000004")
     service.manager.reconcile()
-    service.manager.cancel(cid, confirm_cancel=True)
     result = service.tick()
     assert result["state"] == "HOLD" and result["category"] == "MIN_NOTIONAL"
     assert not service.control.mode()["enabled"]
@@ -583,4 +582,46 @@ def test_final_boundary_dependency_restart_blocks_send(runtime):
     health(service.paths, clock, instance="replacement")
     with pytest.raises(TestnetError, match="DEPENDENCY_RESTART"):
         service.manager.submit(cid, confirm_order=True, automated=True)
+    assert exchange.post_count == 1
+
+
+def test_restart_after_real_mock_attempt_recovers_fills_without_repost(runtime):
+    service, exchange, clock, _, _, acceptance, handler = runtime
+    activate(runtime)
+    next_bar(runtime)
+    cid = service.tick()["submissions"][0]["client_id"]
+    exchange.fill(cid, "0.000006")
+    service.manager.reconcile()
+    fills = service.store.rows("SELECT * FROM executions")
+    positions = service.manager.positions.positions()
+    service.close()
+    new_client = TestnetExecutionClient(
+        service.client.config, transport=httpx.MockTransport(handler)
+    )
+    restarted = Executor(
+        service.paths,
+        service.directory,
+        new_client,
+        service.quote_provider,
+        acceptance_path=acceptance,
+        clock=lambda: clock[0],
+        host_checks=False,
+    )
+    try:
+        assert restarted.tick()["state"] == "OFF"
+        assert fills == restarted.store.rows("SELECT * FROM executions")
+        assert positions == restarted.manager.positions.positions()
+        assert restarted.manager.intent(cid)["state"] == "PARTIALLY_FILLED"
+        assert exchange.post_count == 2
+    finally:
+        restarted.close()
+        new_client.close()
+
+
+def test_db_failure_blocks_new_orders(runtime):
+    service, exchange, *_ = runtime
+    activate(runtime)
+    service.store.failed = True
+    assert service.tick()["state"] == "HOLD"
+    assert not service.control.mode()["enabled"]
     assert exchange.post_count == 1

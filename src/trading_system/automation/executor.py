@@ -343,6 +343,7 @@ class Executor:
         # Pending BUY remainder needs future exit capacity. An already submitted SELL
         # covers only its unfilled quantity and already consumes a daily attempt.
         inventory = {p["symbol"]: dict(p) for p in self.manager.positions.positions()}
+        uncovered = {s: dict(p) for s, p in inventory.items()}
         for order in self.pending_orders():
             observed = self.store.rows(
                 "SELECT executed_qty FROM exchange_orders WHERE client_id=?", (order["client_id"],)
@@ -352,11 +353,15 @@ class Executor:
             p["quantity"] = str(
                 max(dec(0), dec(p["quantity"]) + remaining * (1 if order["side"] == "BUY" else -1))
             )
+            if order["side"] == "SELL" and order["symbol"] in uncovered:
+                actual = uncovered[order["symbol"]]
+                actual["quantity"] = str(max(dec(0), dec(actual["quantity"]) - remaining))
         marks = {s: self.manager._reference(s, self.paths.market).price for s in inventory}
         budget = self.manager.risk.reserve_exit_budget(
             self.manager.attempts(), list(inventory.values()), marks
         )
-        for p in inventory.values():
+        # A hoped-for later fill cannot hide currently unprotectable partial-fill dust.
+        for p in [*inventory.values(), *uncovered.values()]:
             if dec(p["quantity"]) > 0:
                 symbol = p["symbol"]
                 # Do not issue a test/order here; prove that a capped exit passes current filters.

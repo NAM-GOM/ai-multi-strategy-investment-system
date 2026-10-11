@@ -117,6 +117,8 @@ def activation_evidence(manager, paths, acceptance_path, *, host=True):
     sources = frozen_sources()
     accepted = m05_acceptance(acceptance_path, paths)
     manager.guard()
+    if manager.client.request("GET", "/api/v3/account").get("canTrade") is not True:
+        raise TestnetError("ACCOUNT_TRADING_DISABLED")
     if manager.control.killed():
         from trading_system.testnet.client import TestnetError
 
@@ -225,6 +227,8 @@ def online_readonly(
                             tuple(g[k] for k in ("session_id", "gate", "completed_ms", "evidence")),
                         )
                 account = client.request("GET", "/api/v3/account")
+                if account.get("canTrade") is not True:
+                    raise TestnetError("ACCOUNT_TRADING_DISABLED")
                 result = {
                     "state": "GET_RECONCILIATION_PASS",
                     "original_gates": original_gates,
