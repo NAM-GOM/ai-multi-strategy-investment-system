@@ -1,0 +1,17 @@
+name: DEV-E02 offline deployment checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  deployment-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.14.7
+      - run: uv sync --frozen --group dev
+      - run: bash -n scripts/e02-runtime.sh scripts/e02-nuc-readonly.sh
+      - run: uv run --frozen python -m trading_system.automation.cli preflight
+      - run: uv run --frozen python scripts/m05-verify-units.py

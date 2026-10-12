@@ -1,0 +1,18 @@
+{
+  "status": "NOT_TESTED",
+  "classification": "ACTUAL_NUC",
+  "base_sha": "3e37b0b81b05906e1cee858671f67a4c5a719566",
+  "market_path": "/var/lib/CryptoAutoTrading/state/continuous-01/market/market.sqlite",
+  "observer_path": "/var/lib/CryptoAutoTrading/state/continuous-01/observer/observer.sqlite",
+  "execution_path": "/var/lib/CryptoAutoTrading/state/testnet-e01/testnet_execution.sqlite",
+  "approved_by": "",
+  "evidence_references": [],
+  "tests": {
+    "TEST-02": "NOT_TESTED",
+    "TEST-03": "NOT_TESTED",
+    "TEST-04": "NOT_TESTED",
+    "TEST-05": "NOT_TESTED",
+    "TEST-06": "NOT_TESTED",
+    "TEST-07": "NOT_TESTED"
+  }
+}
