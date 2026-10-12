@@ -39,9 +39,9 @@ class RuntimePaths:
             raise TestnetError("DATABASE_PATH_COLLISION")
         # The preview role must never own/write the real execution directory.
         directories = [
-            self.role_dir(role).resolve() for role in ("collector", "observer", "bridge")
+            self.role_dir(role).resolve() for role in ("collector", "observer", "bridge", "account")
         ]
-        if len(set(directories)) != 3 or any(
+        if len(set(directories)) != len(directories) or any(
             self.execution.is_relative_to(directory) for directory in directories
         ):
             raise TestnetError("EXECUTION_RUNTIME_PATH_COLLISION")
@@ -55,7 +55,15 @@ class RuntimePaths:
         return self.root / "observer" / "observer.sqlite"
 
     def role_dir(self, role):
-        return self.root / {"collector": "market", "observer": "observer", "bridge": "bridge"}[role]
+        return (
+            self.root
+            / {
+                "collector": "market",
+                "observer": "observer",
+                "bridge": "bridge",
+                "account": "account",
+            }[role]
+        )
 
     def health(self, role):
         return self.role_dir(role) / "health.json"
