@@ -1,0 +1,46 @@
+[Unit]
+Description=CryptoAutoTrading DEV-M05 bridge (execution disabled)
+Wants=crypto-market-collector.service crypto-strategy-observer.service
+After=crypto-market-collector.service crypto-strategy-observer.service
+StartLimitIntervalSec=600
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=crypto-bridge
+Group=crypto-read
+WorkingDirectory=/srv/CryptoAutoTrading/releases/dev-m05
+EnvironmentFile=/home/gomi/.config/cryptoautotrading/testnet.env
+Environment=BINANCE_TESTNET_TRADING_ENABLED=OFF
+Environment=BINANCE_TESTNET_AUTOMATED_ENABLED=OFF
+UnsetEnvironment=BINANCE_API_KEY BINANCE_API_SECRET
+ExecStartPre=/srv/CryptoAutoTrading/releases/dev-m05/scripts/m05-preflight.sh
+ExecStart=/srv/CryptoAutoTrading/releases/dev-m05/scripts/m05-runtime.sh bridge --online
+Restart=on-failure
+RestartSec=30
+RestartPreventExitStatus=78
+TimeoutStopSec=120
+KillSignal=SIGTERM
+KillMode=control-group
+UMask=0027
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/CryptoAutoTrading/state/continuous-01/bridge
+ReadOnlyPaths=/var/lib/CryptoAutoTrading/state/testnet-e01
+InaccessiblePaths=-/var/lib/CryptoAutoTrading/state/close-validation-01
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crypto-testnet-bridge
+
+[Install]
+WantedBy=multi-user.target

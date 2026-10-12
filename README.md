@@ -796,3 +796,27 @@ initial stop and realized/unrealized PnL are separate. Unsupported fee-asset
 attribution blocks new orders. Testnet performance always carries
 `MAINNET_SIGNAL_TESTNET_EXECUTION_EXPERIMENT` and proves no Production execution
 quality. Live gates remain **DEV-E01_HOLD / TESTNET_LIVE_NOT_TESTED** until observed.
+
+## DEV-M05 — NUC continuous runtime and safe Testnet Preview
+
+M05 adds separate continuous Collector/Observer operational adapters and systemd
+units over the unchanged M03/M04/Frozen sources. Its Bridge reuses E01 Router/Risk
+on a temporary SQLite copy; it never consumes actual execution receipts/checkpoints,
+allocates T1 capital or submits orders. Both Testnet unlocks must remain OFF.
+T2/T3 stay SHADOW_SIGNAL_ONLY and W04 records remain separate.
+
+```bash
+uv run --frozen python -m trading_system.runtime.cli preflight
+uv run --frozen pytest tests/test_runtime.py
+uv run --frozen python scripts/m05-verify-units.py
+```
+
+Deployment/service startup requires separate NUC authorization. Architecture,
+finite-duration compatibility and limitations: [DEV-M05-architecture.md](docs/DEV-M05-architecture.md).
+Read-only checks: [DEV-M05-preflight.md](docs/DEV-M05-preflight.md).
+Korean installation, smoke and rollback commands:
+[DEV-M05-deployment-guide-ko.md](docs/DEV-M05-deployment-guide-ko.md).
+Evidence/acceptance: [DEV-M05-validation.md](docs/DEV-M05-validation.md).
+**DEV-M05_HOLD** until NUC live TEST-02–07 are actually observed. LIMIT/GTC and
+software stops cannot guarantee position protection while the server is stopped.
+TEST-08 activation and TEST-09 one real T1 Testnet order each require separate approval.
