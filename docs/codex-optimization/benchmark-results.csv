@@ -1,0 +1,11 @@
+test,variant,status,repetitions,median_elapsed_ms,tool_calls,read_bytes,output_bytes,changed_files,checks_passed,checks_total,input_tokens,output_tokens,detail
+TEST-A,baseline-rg,PASS,5,3.47,1,UNKNOWN,4162,UNKNOWN,2,2,UNKNOWN,UNKNOWN,Definition recall 2/2; broad output also has 50 comment hits
+TEST-A,portable-targeted-rg,PASS,5,3.587,1,UNKNOWN,72,UNKNOWN,2,2,UNKNOWN,UNKNOWN,Definition recall 2/2; broad output also has 50 comment hits
+TEST-A,Serena,BLOCKED,0,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,Install failed; no symbolic search or MCP comparison
+TEST-B,uncompressed-log-json,PASS,1,UNKNOWN,UNKNOWN,412910,412910,UNKNOWN,3,3,UNKNOWN,UNKNOWN,Synthetic raw fixture includes error/cause/recovery
+TEST-B,Headroom,BLOCKED,0,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,Install failed; compression size/loss/latency unverified
+TEST-C,baseline-full-read,PASS,5,49.338,2,23977,99,1,103,103,UNKNOWN,UNKNOWN,Same patch; full 103 tests once per run; focused variant adds 3 tests
+TEST-C,portable-focused,PASS,5,90.277,3,77,196,1,103,103,UNKNOWN,UNKNOWN,Same patch; full 103 tests once per run; focused variant adds 3 tests
+TEST-D,baseline-history,PASS,5,0.157,1,66148,UNKNOWN,UNKNOWN,5,5,UNKNOWN,UNKNOWN,Deterministic file recall; no Cloud session or model inference
+TEST-D,portable-checkpoint,PASS,5,0.005,1,125,UNKNOWN,UNKNOWN,5,5,UNKNOWN,UNKNOWN,Deterministic file recall; no Cloud session or model inference
+TEST-D,Claude-Mem,SECURITY_HOLD,0,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,UNKNOWN,Observer disabled; provider/egress and persistence unverified

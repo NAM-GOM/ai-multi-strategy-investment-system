@@ -119,3 +119,27 @@ Follow this order:
 6. Token efficiency
 
 Apply these rules to all software projects unless more specific project instructions override them.
+
+## CODEX-OPT-01 portable configuration
+
+The Universal Codex Efficiency Rules above remain authoritative. Repository safety
+rules and explicit user instructions take precedence over optional third-party skills.
+
+- Confirm the requested scope before searching; use targeted `rg` and line ranges.
+- Run affected tests first when useful, then all project-mandated checks before completion.
+  A passing focused check never replaces a required safety gate.
+- Use an existing handoff only after checking its commit, changed files, and known blockers.
+- Keep complete diagnostic output in a local file when needed; show a concise summary
+  without discarding exit codes, distinct errors, or required recovery evidence.
+- Do not repeat failures without new evidence or expand unrelated work.
+- Do not automatically start proxies, memory observers, lifecycle hooks, brainstorming,
+  or subagents. Tool installation is not proof of Cloud host activation.
+- Optional reviewed skills in `tools/codex-optimization/available-skills/` are inactive
+  by default. Read only the specifically requested skill, subject to these rules.
+- The project skill `codex-efficient-workflow` is opt-in. Its presence does not prove
+  discovery by an already running Cloud session.
+- Financial, security, database, infrastructure, and production changes remain STRICT.
+- Report changed files, verification evidence, limitations, and required next actions.
+
+For another project, merge these rules without replacing that project's instructions.
+See `docs/codex-optimization/cloud-setup-guide.md` for setup and rollback.

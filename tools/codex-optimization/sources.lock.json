@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "reviewed_date": "2026-10-13",
+  "automatic_third_party_activation": false,
+  "sources": [
+    {
+      "id": "OPT-01",
+      "repository": "oraios/serena",
+      "reviewed_commit": "737ccc29a72aec5e6a2404d1caef1d0c0d9fb663",
+      "readme_url": "https://github.com/oraios/serena/blob/737ccc29a72aec5e6a2404d1caef1d0c0d9fb663/README.md",
+      "license": "GPL-3.0-or-later (Serena); MIT (SolidLSP)",
+      "status": "FAILED",
+      "active": false
+    },
+    {
+      "id": "OPT-02",
+      "repository": "headroomlabs-ai/headroom",
+      "reviewed_commit": "0126fba63f5af3c8022085d0d033dce56fe5db65",
+      "readme_url": "https://github.com/headroomlabs-ai/headroom/blob/0126fba63f5af3c8022085d0d033dce56fe5db65/README.md",
+      "license": "Apache-2.0",
+      "status": "FAILED",
+      "active": false
+    },
+    {
+      "id": "OPT-03",
+      "repository": "DietrichGebert/ponytail",
+      "reviewed_commit": "2961b52fc1fe6a5a87c7a959a79512e5c2f3ffe5",
+      "readme_url": "https://github.com/DietrichGebert/ponytail/blob/2961b52fc1fe6a5a87c7a959a79512e5c2f3ffe5/README.md",
+      "license": "MIT",
+      "status": "PARTIAL",
+      "active": false,
+      "staged_files": {
+        "tools/codex-optimization/available-skills/ponytail/LICENSE": "fb1bc6909ac3ef82d5c22106e32ef682b0cff66788fa915fb9b53b15c9d2f3ab",
+        "tools/codex-optimization/available-skills/ponytail/SKILL.md": "ba68ff26239c3c3b05b2a9a47ee0d9a6b93a69639a2555ec87a5d44bffaf2f0c"
+      }
+    },
+    {
+      "id": "OPT-04",
+      "repository": "Creativebrook/codex-token-optimizer-kit",
+      "reviewed_commit": "442a7f771cb637523f1ea05c2eef4e7c7fbad12f",
+      "readme_url": "https://github.com/Creativebrook/codex-token-optimizer-kit/blob/442a7f771cb637523f1ea05c2eef4e7c7fbad12f/README.md",
+      "license": "MIT",
+      "status": "PARTIAL",
+      "active": false,
+      "staged_files": {
+        "tools/codex-optimization/available-skills/token-efficient-workflow/LICENSE": "76788c9e119a8a291bace38615f3aff3fae61e130843bcad2461e95797159511",
+        "tools/codex-optimization/available-skills/token-efficient-workflow/SKILL.md": "df93b8aa3e21620e892e096b635f5a7d6630d27d06f32e06d2251a647de123ba"
+      }
+    },
+    {
+      "id": "OPT-05",
+      "repository": "zhangyiling108-code/codex-token-optimizer",
+      "reviewed_commit": "8eab8f34d52db539349c099fdcb5db0b50519923",
+      "readme_url": "https://github.com/zhangyiling108-code/codex-token-optimizer/blob/8eab8f34d52db539349c099fdcb5db0b50519923/README.md",
+      "license": "NO_LICENSE_OBSERVED",
+      "status": "SECURITY_HOLD",
+      "active": false
+    },
+    {
+      "id": "OPT-06",
+      "repository": "thedotmack/claude-mem",
+      "reviewed_commit": "a2150b2c09c6da01dfdc1296f8d2c3f3975a4418",
+      "readme_url": "https://github.com/thedotmack/claude-mem/blob/a2150b2c09c6da01dfdc1296f8d2c3f3975a4418/README.md",
+      "license": "Apache-2.0",
+      "status": "SECURITY_HOLD",
+      "active": false
+    },
+    {
+      "id": "OPT-07",
+      "repository": "obra/superpowers",
+      "reviewed_commit": "bb92a77741419a4ab5f06e711a283343f1ada0c3",
+      "readme_url": "https://github.com/obra/superpowers/blob/bb92a77741419a4ab5f06e711a283343f1ada0c3/README.md",
+      "license": "MIT",
+      "status": "PARTIAL",
+      "active": false,
+      "staged_files": {
+        "tools/codex-optimization/available-skills/verification-before-completion/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+        "tools/codex-optimization/available-skills/verification-before-completion/SKILL.md": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3"
+      }
+    }
+  ]
+}
