@@ -82,11 +82,14 @@ staged Skill은 모델 효과가 검증되지 않아 기본 비활성이다.
 복사할 수 있다. 같은 이름이 이미 있으면 덮어쓰지 않는다.
 
 ```bash
-test ! -e .agents/skills/ponytail
-cp -R tools/codex-optimization/available-skills/ponytail .agents/skills/
+if [ ! -e .agents/skills/ponytail ]; then
+  cp -R tools/codex-optimization/available-skills/ponytail .agents/skills/
+else
+  printf '%s\n' 'Existing ponytail Skill found; compare revisions before changing it.' >&2
+fi
 ```
 
-기존 파일이 있으면 이 두 명령을 별도 무조건 실행하지 않는다.
+이 예시는 기존 파일이 있으면 복사를 건너뛰며 덮어쓰지 않는다.
 설치 여부를 확인하고 기존 내용·source revision을 비교한 다음 중복을 해결한다.
 Ponytail의 자동 trigger는 범용적이므로 선택적 사용 목적에 맞게 검토한다.
 현재 task 중 파일 복사만으로 host 재로딩 성공을 주장하지 않는다.
