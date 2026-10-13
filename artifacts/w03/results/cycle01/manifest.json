@@ -1,0 +1,51 @@
+{
+  "status": "BASELINE_COMPLETE_NEEDS_REVIEW",
+  "config": {
+    "initial_capital": 100000.0,
+    "risk_per_trade": 0.005,
+    "max_asset_allocation": 0.333,
+    "fee_bps": 10.0,
+    "slippage_bps": 5.0
+  },
+  "common_raw_start": "2020-08-11 04:00:00+00:00",
+  "primary_start": "2020-09-13 16:00:00+00:00",
+  "last_bar_open": "2026-10-02 08:00:00+00:00",
+  "warmup_bars": 201,
+  "python": "3.12.14",
+  "pandas": "3.0.1",
+  "numpy": "2.3.5",
+  "source_snapshot": {
+    "source": "https://data-api.binance.vision",
+    "server_time_ms": 1790945235462,
+    "cutoff_ms": 1790942400000,
+    "interval": "4h",
+    "market": "Binance Spot",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT"
+    ]
+  },
+  "code_sha256": {
+    "alpha_lab\\audit.py": "30cb4841087c5517a36720e5f5b577ea5ca43bc121ca2bd7db3e0d1e81a869b0",
+    "alpha_lab\\cycle.py": "17e11233f55da966cb826a0c165e02724f77bb553837a293847ae415a94a893c",
+    "alpha_lab\\data.py": "d8e101b44ba5db9f12cfcd1c78b18200030b134b98609ac9cebe6acd5107259e",
+    "alpha_lab\\engine.py": "7bfb60ad087e71c834563ae4270d2af51627380d9ee614c76884cff526912b9b",
+    "alpha_lab\\metrics.py": "02c61d2880462ad78f942f37654fe5bb8629a92c78e66bc696d7664614e5ae62",
+    "alpha_lab\\strategies.py": "0850fcc32356a4275e0795cece08a6f6d701220b941ce94e2b95dd1ce802a965",
+    "alpha_lab\\__init__.py": "bcd8978a96cbf25dbcc906f24095d85e8fff063d6830913584c257a9d636a487",
+    "tests\\test_baseline.py": "862348d0e07f13ce3393cfbbe8db4ab20acd624ecab0e1d3f3fefae16faee4ae"
+  },
+  "data_sha256": {
+    "BTCUSDT": "f4ddf0ec4354fe66f2635887a809e433962877b9b090a728a02d3721a0183059",
+    "ETHUSDT": "f0cda00c5f062f947c0175c911b8afb521a62d38d04d3f45c220a56d3e7002bb",
+    "SOLUSDT": "fe428dcdce137be444ab38f2c497651455173b4bbcbc2a5cdc75e386e1265187"
+  },
+  "warnings": [
+    "Full-history source gaps: indicators reset, missing next-open orders cancelled; carried positions mark only observed bars. Gap-spanning returns distort annualized 4H volatility ratios; secondary diagnostic only.",
+    "33.3% cap applies at entry; passive appreciation can exceed it. No rule-changing rebalance.",
+    "0.5% is stop-distance sizing before costs and gap losses, not guaranteed realized loss.",
+    "Terminal liquidation at last confirmed close includes fee/slippage.",
+    "Fractional units; exchange filters and live liquidity not modeled."
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "commit": "11bfffbdfb529f3da8ac11ebd49fb1ed81c23725",
+  "run_id": 37985954969,
+  "html_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37985954969",
+  "status": "completed",
+  "conclusion": "success",
+  "verified_at_utc": "2026-10-09T22:32:47Z",
+  "jobs": [
+    {
+      "id": 114007874352,
+      "name": "unit-tests (windows-latest)",
+      "conclusion": "success",
+      "pytest": {
+        "passed": 283,
+        "skipped": 8,
+        "seconds": 53.38
+      },
+      "ruff": "PASS",
+      "format": {
+        "status": "PASS",
+        "files": 53
+      },
+      "log_evidence": [
+        "2026-10-09T20:18:30.6799240Z ======================= 283 passed, 8 skipped in 53.38s =======================",
+        "2026-10-09T20:18:31.2977671Z All checks passed!",
+        "2026-10-09T20:18:31.8051192Z 53 files already formatted"
+      ]
+    },
+    {
+      "id": 114007874499,
+      "name": "unit-tests (ubuntu-latest)",
+      "conclusion": "success",
+      "pytest": {
+        "passed": 283,
+        "skipped": 8,
+        "seconds": 34.59
+      },
+      "ruff": "PASS",
+      "format": {
+        "status": "PASS",
+        "files": 53
+      },
+      "log_evidence": [
+        "2026-10-09T20:18:00.7430118Z ======================= 283 passed, 8 skipped in 34.59s ========================",
+        "2026-10-09T20:18:00.9140173Z All checks passed!",
+        "2026-10-09T20:18:00.9587279Z 53 files already formatted"
+      ]
+    }
+  ],
+  "scope": "Existing implementation and independent audit tool; report revision is a subsequent documentation-only commit.",
+  "local_reverification": {
+    "audit": "INDEPENDENT_LIVE_AUDIT_PASS",
+    "windows": 2,
+    "live_decisions": 18,
+    "restart_added_decisions": 0,
+    "original_files_unchanged": true,
+    "ruff": "PASS",
+    "format": {
+      "status": "PASS",
+      "files": 53
+    },
+    "full_pytest_rerun": false
+  }
+}

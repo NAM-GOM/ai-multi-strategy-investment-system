@@ -1,4 +1,4 @@
-"""python -m trading_system.cli {public,account,all}"""
+"""python -m trading_system.cli {public,account,all,stream}"""
 
 import argparse
 import logging
@@ -76,9 +76,70 @@ def run_account(client: BinanceClient) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="DEV-M01: read-only Binance Spot connectivity")
-    parser.add_argument("command", choices=("public", "account", "all"))
+    parser = argparse.ArgumentParser(description="Read-only Binance Spot REST and WebSocket data")
+    parser.add_argument(
+        "command",
+        choices=(
+            "public",
+            "account",
+            "all",
+            "stream",
+            "db-init",
+            "collect",
+            "db-status",
+            "db-verify",
+            "db-backup",
+            "db-restore",
+            "strategy-audit",
+            "strategy-replay",
+            "observe",
+            "observer-status",
+        ),
+    )
+    parser.add_argument("--duration", type=float)
+    parser.add_argument("--ws-base-url", default="wss://data-stream.binance.vision")
+    parser.add_argument("--report-file")
+    parser.add_argument("--db-path", default="data/market_data.sqlite")
+    parser.add_argument("--bootstrap-days", type=int, default=7)
+    parser.add_argument("--snapshot-seconds", type=int, default=60)
+    parser.add_argument("--retention-days", type=int, default=30)
+    parser.add_argument("--recovery-max-days", type=int, default=365)
+    parser.add_argument("--backup-path")
+    parser.add_argument("--observer-db", default="data/observer.sqlite")
+    parser.add_argument("--start-ms", type=int)
+    parser.add_argument("--end-ms", type=int)
     args = parser.parse_args(argv)
+    if args.command in ("strategy-audit", "strategy-replay", "observe", "observer-status"):
+        from trading_system.observer.cli import run_observer_cli
+
+        return run_observer_cli(args)
+    if args.command in ("db-init", "collect", "db-status", "db-verify", "db-backup", "db-restore"):
+        from trading_system.persistence.cli import run_database_cli
+
+        try:
+            configure_logging()
+        except OSError:
+            print("Cannot initialize logs/app.log. Check directory permissions.")
+            return 2
+        logger.info("program start command=%s", args.command)
+        code = run_database_cli(args)
+        logger.info("program exit code=%d", code)
+        return code
+    if args.command == "stream":
+        # Do not load .env or account credentials for public WebSocket operation.
+        from trading_system.binance.websocket import run_stream_cli
+
+        try:
+            configure_logging()
+        except OSError:
+            print("Cannot initialize logs/app.log. Check directory permissions.")
+            return 2
+        logger.info("program start command=stream")
+        code = run_stream_cli(
+            120 if args.duration is None else args.duration, args.ws_base_url, args.report_file
+        )
+        logger.info("program exit code=%d", code)
+        return code
     try:
         config = load_config(include_credentials=args.command != "public")
         configure_logging(secrets=(config.api_key, config.api_secret))

@@ -1,0 +1,200 @@
+{
+  "commit": "9985e2c999185d4793612bc0edb4552f57c62d12",
+  "run_id": 37936170401,
+  "jobs": [
+    {
+      "id": 113838660182,
+      "name": "unit-tests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37936170401/job/113838660182",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-09T13:20:46Z",
+          "completed_at": "2026-10-09T13:20:47Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-09T13:20:47Z",
+          "completed_at": "2026-10-09T13:20:48Z"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-09T13:20:48Z",
+          "completed_at": "2026-10-09T13:20:50Z"
+        },
+        {
+          "name": "Run uv python install 3.14.7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-09T13:20:50Z",
+          "completed_at": "2026-10-09T13:20:51Z"
+        },
+        {
+          "name": "Run uv sync --frozen --group dev",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-09T13:20:51Z",
+          "completed_at": "2026-10-09T13:20:52Z"
+        },
+        {
+          "name": "Run uv run --frozen pytest",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-09T13:20:52Z",
+          "completed_at": "2026-10-09T13:21:23Z"
+        },
+        {
+          "name": "Run uv run --frozen ruff check .",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-09T13:21:23Z",
+          "completed_at": "2026-10-09T13:21:24Z"
+        },
+        {
+          "name": "Run uv run --frozen ruff format --check .",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-09T13:21:24Z",
+          "completed_at": "2026-10-09T13:21:24Z"
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-09T13:21:24Z",
+          "completed_at": "2026-10-09T13:21:24Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-10-09T13:21:24Z",
+          "completed_at": "2026-10-09T13:21:24Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-09T13:21:24Z",
+          "completed_at": "2026-10-09T13:21:24Z"
+        }
+      ]
+    },
+    {
+      "id": 113838660505,
+      "name": "unit-tests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37936170401/job/113838660505",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-09T13:20:46Z",
+          "completed_at": "2026-10-09T13:20:46Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-09T13:20:46Z",
+          "completed_at": "2026-10-09T13:20:51Z"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-09T13:20:51Z",
+          "completed_at": "2026-10-09T13:20:54Z"
+        },
+        {
+          "name": "Run uv python install 3.14.7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-09T13:20:54Z",
+          "completed_at": "2026-10-09T13:20:57Z"
+        },
+        {
+          "name": "Run uv sync --frozen --group dev",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-09T13:20:57Z",
+          "completed_at": "2026-10-09T13:20:59Z"
+        },
+        {
+          "name": "Run uv run --frozen pytest",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-09T13:20:59Z",
+          "completed_at": "2026-10-09T13:21:36Z"
+        },
+        {
+          "name": "Run uv run --frozen ruff check .",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-09T13:21:36Z",
+          "completed_at": "2026-10-09T13:21:37Z"
+        },
+        {
+          "name": "Run uv run --frozen ruff format --check .",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-09T13:21:37Z",
+          "completed_at": "2026-10-09T13:21:37Z"
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-09T13:21:37Z",
+          "completed_at": "2026-10-09T13:21:37Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-10-09T13:21:37Z",
+          "completed_at": "2026-10-09T13:21:39Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-09T13:21:39Z",
+          "completed_at": "2026-10-09T13:21:39Z"
+        }
+      ]
+    }
+  ]
+}

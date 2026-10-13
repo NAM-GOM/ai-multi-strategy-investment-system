@@ -1,0 +1,13 @@
+................s....................................................... [ 24%]
+ssssss.................................................................. [ 49%]
+........................................................................ [ 74%]
+..............................................s......................... [ 98%]
+...                                                                      [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_collect_integration.py:16: Enable --live-collect for a real 120s SQLite/public collection
+SKIPPED [3] tests\test_integration.py:27: Enable --live-public to make real public HTTP requests
+SKIPPED [1] tests\test_integration.py:34: Enable --live-public to make real public HTTP requests
+SKIPPED [1] tests\test_integration.py:38: Enable --live-public to make real public HTTP requests
+SKIPPED [1] .venv\Lib\site-packages\_pytest\python.py:166: Enable --live-account to request real account balances
+SKIPPED [1] tests\test_stream_integration.py:14: Enable --live-stream for a real 120s public WebSocket check
+283 passed, 8 skipped in 41.50s

@@ -1,0 +1,27 @@
+{
+  "preflight": "MR_W01_PREFLIGHT_PASS",
+  "preflight_tests_passed": 24,
+  "regression_before": {
+    "passed": 283,
+    "skipped": 8
+  },
+  "regression_after": {
+    "passed": 307,
+    "skipped": 8
+  },
+  "ruff_check": "PASS",
+  "ruff_format": "PASS",
+  "fresh_process_csv_sha256": {
+    "MR-W01_summary.csv": "013b1e1fb74622ae312e9436bc8028878f9b87360d961fbefe733e0cd4783778",
+    "MR-W01_trades.csv": "8162028b85a84b7c688d334997e18e3bd5ef36ee78b12c95535cea82eeca5bd0",
+    "MR-W01_signals.csv": "f948bfc4599c23ba61a07c6ec7f7e42b70c0f457bc1d7c802fc14a38f632f71a",
+    "MR-W01_equity.csv": "76d0d0c09598ca15173855ba09730b95430b31cd3d0c531a3c7d121cc7f1bfd4"
+  },
+  "fresh_process_reproduction": "PASS",
+  "saved_csv_accounting": "PASS",
+  "windows_local": "NOT_RUN",
+  "live_network": "NOT_RUN",
+  "charts_byte_reproduction": "NOT_CLAIMED",
+  "status": "MR_W01_BASELINE_COMPLETE",
+  "profitability_approval": false
+}

@@ -64,8 +64,8 @@ Private API credentials not configured. Account check skipped.
 | PUBLIC-03 | PASS | BTCUSDT Bid / Ask 각각 10개 실제 조회 |
 | PUBLIC-04 | PASS | Order Book REST latency 출력 |
 | PRIVATE-01 | PASS | 키 미설정 시 안전하게 skip, exit 0 |
-| PRIVATE-02 | READY_FOR_LIVE_VALIDATION | 수동 GitHub Actions 구현 완료. 실제 live run 성공 전이며 PASS 아님 |
-| PRIVATE-03 | READY_FOR_LIVE_VALIDATION | 네 자산의 Decimal / 합계 / 음수 검사와 안전한 요약 준비. 실제 live run 성공 전 |
+| PRIVATE-02 | LOCAL_LIVE_PASS / GHA_BLOCKED | 사용자 제공 Windows 실검증: 인증 PASS. GitHub-hosted HTTP 451은 유지 |
+| PRIVATE-03 | LOCAL_LIVE_PASS / GHA_BLOCKED | 사용자 제공 Windows 실검증: 네 자산 파싱·Decimal·합계 PASS. Actions 실검증은 미완료 |
 | SECURITY-01 | PASS | 소스의 실제 API Key 없음. 테스트 fixture는 명확한 dummy 값 |
 | SECURITY-02 | PASS | 소스의 실제 Secret 없음. HMAC 테스트는 공개 RFC 4231 벡터 |
 | SECURITY-03 | PASS | `.env` Git 미추적 및 ignore 규칙 확인 |
@@ -141,10 +141,97 @@ HTTP 451은 `http_4xx HTTP=451`과 runner/environment 접근 불가 메시지로
 | SECURITY-05 / SECURITY-06 | 모의 출력·노출 차단 검사 PASS. 실제 Actions run은 아직 미실행 |
 | SECURITY-07 | PASS. Private endpoint 추가 없음, Trading / Withdrawal 미구현 |
 | TEST-02 / TEST-03 / DOC-02 | PASS. Unit 통과, 명시적 live 옵션, 사용 절차 문서화 |
-| PRIVATE-02 / PRIVATE-03 | **READY_FOR_LIVE_VALIDATION**. 실제 인증·잔액 PASS 미확인 |
+| PRIVATE-02 / PRIVATE-03 | **BLOCKED_RUNNER_ACCESS**. 이후 실제 run에서 HTTP 451 확인. 최신 진단은 아래 참조 |
 
 GitHub Actions의 수동 실행 UI는 workflow 파일이 기본 브랜치(`main`)에 있어야 표시됩니다.
 현재 작업 브랜치 변경사항을 PR로 main에 병합한 뒤, README의
 **Actions → DEV-M01 Live Binance Account Check → Run workflow → dev-m01-binance-connectivity → Run workflow**
 절차로 사용자가 실행하세요. 이번 작업에서는 live workflow를 자동으로 dispatch하지 않았습니다.
 성공 run의 URL / commit / 결과를 확인한 뒤에만 PRIVATE-02 / PRIVATE-03을 PASS로 갱신하세요.
+
+## HTTP 451 원인 진단 및 실행 경로 수정 — 2026-10-08
+
+실제 최초 Account run:
+[37704805818](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37704805818).
+Unit 94개가 통과한 뒤 GET `/api/v3/account`에서 HTTP 451로 실패했습니다.
+API가 반환한 인증 성공이나 잔액은 없습니다.
+
+이후 키 없는 GitHub-hosted 진단 run:
+[37705346650](https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37705346650),
+실행 commit `ef4dd4fd4be83f1d815582594369d023dfacd07f`.
+
+```text
+102 passed, 6 deselected
+Probe endpoint: GET /api/v3/time
+Credentials: NOT USED
+Authentication: NOT_TESTED
+Account host connectivity: FAIL
+Error: http_4xx endpoint=/api/v3/time HTTP=451 Restriction=restricted_location
+Access restriction reason: restricted_location
+```
+
+이 run에서도 **인증 전 공개 endpoint가 지역 / 이용 자격 제한으로 거절됨**을 확인했습니다.
+Secret을 주입하지 않았고 live-account-check job은 skip했습니다.
+현재 클라우드의 키 없는 `/api/v3/time`, `/api/v3/ping` 응답에서도 restricted location과 eligibility
+안내가 확인되었습니다. 응답 원문은 로그·보고서에 넣지 않고 고정된 이유 코드만 기록했습니다.
+runner API 정보는 GitHub-hosted `ubuntu-latest`를 보여주며, 정확한 출구 국가나 사용자 이용 자격은
+현재 증거로 확정할 수 없습니다. 계정 키·서명·timestamp 오류로 판정하지 않습니다.
+
+적용한 변경:
+
+- `BinanceError`의 기존 오류 분류를 유지하고 451의 `restriction_reason`을 안전한 고정 문자열로 추가
+- `trading_system.binance.connectivity`: 기존 GET Client로 계정 호스트를 검사, `.env` / credential 미사용
+- `live-account.yml`: 기본 `github-hosted-diagnostic` 모드는 공개 preflight만 수행
+- 실제 검증 모드 `self-hosted`는 `[self-hosted, linux, x64, binance-readonly]`에서만 수행
+- self-hosted 검증에서도 키 없는 preflight 성공 후에만 Secrets 주입 및 기존 계정 integration 실행
+- `.github/actionlint.yaml`: 사용자 지정 runner label 선언. lint 규칙을 비활성화하지 않음
+- `tests/test_connectivity.py`: 키 미사용 / 451 이유 분류 / timeout 외 응답 오류 / 0 credential 출력 검증
+- README에 진단 모드, runner 등록, 해결의 외부 조건과 제한을 명시
+
+검증: 기본 pytest **102 passed, 6 skipped**, 실제 GitHub 진단의 Unit **102 passed**,
+ruff / format / actionlint 통과. 공식 actionlint release checksum을 확인했습니다.
+일반 `tests.yml`은 변경하지 않았습니다. 주문 / 출금 / 이체 / 추가 Private endpoint도 없습니다.
+
+실제 해결에는 **사용자와 실행 환경 모두 Binance 이용 자격을 충족하는 신뢰할 수 있는 머신**이
+필요합니다. 기존 제한을 우회할 목적으로 다른 지역의 서버를 선택하거나 VPN / 프록시 / IP 회전을
+사용하지 않습니다. 사용자가 현재 사용할 서버가 없다고 답변했으며, 현재 GitHub 인증으로
+runner 목록 조회도 `Resource not accessible by integration` (HTTP 403)입니다.
+runner를 설치·등록하거나 live 계정 검증에 성공했다고 보고하지 않습니다.
+
+적격 환경의 Linux x64 PC도 self-hosted runner가 될 수 있습니다. 실제 머신을 준비한 뒤
+GitHub Settings → Actions → Runners에서 `binance-readonly` label로 등록하고 preflight를 통과하면,
+수동 workflow의 `self-hosted` 모드로 계정 검증을 재개할 수 있습니다.
+이 진단 시점의 PRIVATE-02 / PRIVATE-03은 **BLOCKED_RUNNER_ACCESS**였습니다.
+이후 Windows 로컬 실검증 결과는 아래에 별도로 기록합니다.
+
+## Windows 로컬 실검증 결과 — 보고 접수 2026-10-08
+
+사용자가 Windows PC에 연결된 Codex에서 실행한 결과 요약을 제공했습니다.
+이 기록의 근거는 사용자 제공 보고서이며, 이 클라우드 세션에서 Windows 명령을 직접 재실행한 것은
+아닙니다. Secret이나 실제 잔액 수량을 요청·수집하지 않았습니다.
+
+| 항목 | 사용자 제공 결과 |
+| --- | --- |
+| Python | 3.14.7 |
+| Branch / Commit | `dev-m01-binance-connectivity` / `8be24eab7a7eeee8acb6bfb448f74d1e1e81eba0` |
+| Account host connectivity | PASS, exit 0 |
+| Account CLI authentication | PASS, exit 0 |
+| USDT / BTC / ETH / SOL | PRESENT / ZERO / ZERO / ZERO |
+| Decimal / total consistency | PASS |
+| Unit Test | 102 passed, 6 deselected |
+| Live account integration | 1 passed, 5 Public tests skipped |
+| Ruff check / format | PASS |
+| Error / HTTP error | 없음 |
+| Secret exposure check | PASS, 출력 및 앱 로그 검사 |
+| 로컬 Git changes | 없음. 소스·테스트·의존성·lockfile 보존 |
+| 로컬 Remaining action | 없음 |
+
+**PRIVATE-02 / PRIVATE-03: Windows 로컬 실검증 PASS (사용자 보고 기준).**
+이 결과로 해당 Windows 실행 환경에서 기존 read-only Client의 실제 HMAC 인증과 네 자산의 잔액
+파싱이 성공했음을 기록합니다. 키 없는 public 데이터 검증과 별개로 private 실검증 근거가 확보됐습니다.
+
+**GitHub Actions: 기존 GitHub-hosted HTTP 451 / BLOCKED_RUNNER_ACCESS 유지.**
+Windows 직접 실행은 GitHub-hosted 또는 self-hosted workflow의 성공을 의미하지 않습니다.
+따라서 GitHub Actions PRIVATE-02 / PRIVATE-03을 PASS로 변경하지 않습니다.
+GitHub 자동 검증을 완료하려면 적격 runner를 등록하고 실제 workflow 성공 run을 확인해야 합니다.
+현재 self-hosted workflow label은 Linux x64용이며 Windows runner 등록·실행은 검증하지 않았습니다.

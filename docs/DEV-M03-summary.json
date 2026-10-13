@@ -1,0 +1,308 @@
+{
+  "cycle": "DEV-M03",
+  "status": "DEV-M03_HOLD",
+  "baseline_commit": "da8ab0e5729edf18aaccda69a91b3489670d8426",
+  "branch": "dev-m03-sqlite-market-data",
+  "schema_version": 1,
+  "python_version": "3.14.7",
+  "unit_tests": {
+    "passed": 239,
+    "live_skipped": 8,
+    "new_tests": 49
+  },
+  "windows_compatibility_prerequisite": {
+    "commit": "64c75b0",
+    "unit_passed": 190,
+    "live_skipped": 7,
+    "ci_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37872643747",
+    "status": "PASS"
+  },
+  "windows_local_live": {
+    "status": "PENDING_USER_EXECUTION",
+    "required_duration_seconds_each": 600,
+    "required_runs": 2
+  },
+  "cloud_live": {
+    "status": "LINUX_CLOUD_LIVE_PASS",
+    "duration_seconds_each": 120,
+    "execution_environment": "Linux cloud",
+    "runs": [
+      {
+        "run_id": "e9e60e23-0181-4c3f-bdd8-cdfbeb214387",
+        "status": "COMPLETED",
+        "counters": {
+          "messages_received": 465,
+          "price_snapshots_written": 9,
+          "candles_written": 126,
+          "duplicate_candles": 9,
+          "gaps_detected": 3,
+          "gaps_resolved": 3,
+          "reconnect_count": 0
+        },
+        "conflicts": 0,
+        "recovery_status": "COMPLETE",
+        "error_category": null,
+        "pending_closed": 0,
+        "symbols": {
+          "BTCUSDT": {
+            "price": "81942.05000000",
+            "price_messages": 114,
+            "candle_messages": 58,
+            "last_price_received_at": "2026-10-09T02:28:05.090962+00:00",
+            "price_age_seconds": 5.311553,
+            "candle_age_seconds": 6.314553,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          },
+          "ETHUSDT": {
+            "price": "2479.06000000",
+            "price_messages": 95,
+            "candle_messages": 45,
+            "last_price_received_at": "2026-10-09T02:28:05.094083+00:00",
+            "price_age_seconds": 5.308553,
+            "candle_age_seconds": 8.290553,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          },
+          "SOLUSDT": {
+            "price": "109.71000000",
+            "price_messages": 99,
+            "candle_messages": 54,
+            "last_price_received_at": "2026-10-09T02:28:04.870404+00:00",
+            "price_age_seconds": 5.533553,
+            "candle_age_seconds": 5.517553,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          }
+        },
+        "invalid_messages": 0,
+        "closed_candles_observed": 0,
+        "final_data_fresh": true,
+        "normal_shutdown": true
+      },
+      {
+        "run_id": "1fb431af-8f66-4df4-898d-b775f62f219a",
+        "status": "COMPLETED",
+        "counters": {
+          "messages_received": 434,
+          "price_snapshots_written": 9,
+          "candles_written": 0,
+          "duplicate_candles": 12,
+          "gaps_detected": 0,
+          "gaps_resolved": 0,
+          "reconnect_count": 0
+        },
+        "conflicts": 0,
+        "recovery_status": "COMPLETE",
+        "error_category": null,
+        "pending_closed": 0,
+        "symbols": {
+          "BTCUSDT": {
+            "price": "81954.39000000",
+            "price_messages": 110,
+            "candle_messages": 55,
+            "last_price_received_at": "2026-10-09T02:33:06.094084+00:00",
+            "price_age_seconds": 5.678743,
+            "candle_age_seconds": 5.673743,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          },
+          "ETHUSDT": {
+            "price": "2478.84000000",
+            "price_messages": 96,
+            "candle_messages": 47,
+            "last_price_received_at": "2026-10-09T02:33:06.097450+00:00",
+            "price_age_seconds": 5.675743,
+            "candle_age_seconds": 5.673743,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          },
+          "SOLUSDT": {
+            "price": "109.74000000",
+            "price_messages": 84,
+            "candle_messages": 42,
+            "last_price_received_at": "2026-10-09T02:33:05.873418+00:00",
+            "price_age_seconds": 5.899743,
+            "candle_age_seconds": 6.883743,
+            "price_fresh": true,
+            "candle_fresh": true,
+            "candle": "IN_PROGRESS"
+          }
+        },
+        "invalid_messages": 0,
+        "closed_candles_observed": 0,
+        "final_data_fresh": true,
+        "normal_shutdown": true
+      }
+    ],
+    "db_counts": {
+      "price_snapshots": 18,
+      "candles_4h": 126,
+      "data_gaps": 3,
+      "ingestion_runs": 2,
+      "candle_conflicts": 0
+    },
+    "candle_sources": {
+      "REST_BOOTSTRAP": 126,
+      "REST_RECOVERY": 0,
+      "WS_LIVE": 0
+    },
+    "verification": {
+      "sqlite_integrity": "PASS",
+      "invalid_rows": 0,
+      "missing_ranges": [],
+      "unresolved_gaps": 0,
+      "data_status": "COMPLETE",
+      "checked_through_open_ms": 1791489600000
+    },
+    "backup_restore": "PASS",
+    "ws_live_closed_candle_observed": false,
+    "recovery_new_candle_live_observed": false,
+    "code_commit": "e56058f091b946f1e9c8da05103848f24b1b9295"
+  },
+  "implementation_ci": {
+    "status": "PASS",
+    "commit": "05be73fb588ddd4adc6d9fc57ab0be2209be9ed3",
+    "linux": {
+      "passed": 239,
+      "live_skipped": 8,
+      "ruff": "PASS",
+      "format": "PASS"
+    },
+    "windows": {
+      "passed": 239,
+      "live_skipped": 8,
+      "ruff": "PASS",
+      "format": "PASS"
+    },
+    "ci_url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/actions/runs/37875812326"
+  },
+  "private_api_used": false,
+  "trading_implemented": false,
+  "w04_formal_clock_started": false,
+  "implementation_commit": "05be73fb588ddd4adc6d9fc57ab0be2209be9ed3",
+  "pull_request_base": "dev-m02-binance-websocket",
+  "decision_reason": "Windows local 600s x 2 live validation pending",
+  "ruff": "PASS",
+  "format": "PASS",
+  "regression_tests": {
+    "passed": 190,
+    "baseline": "DEV-M01 / DEV-M02"
+  },
+  "security": {
+    "status": "PASS",
+    "tracked_credential_findings": [],
+    "non_get_http_calls": [],
+    "endpoints_in_changed_modules": [
+      "/api/v3/depth",
+      "/api/v3/klines",
+      "/api/v3/ticker/price",
+      "/api/v3/time"
+    ],
+    "baseline_frozen_files_unchanged": true,
+    "local_artifacts_ignored": true,
+    "public_logs_safe": true,
+    "private_api_used_by_collector": false,
+    "arbitrary_sql_cli": false
+  },
+  "acceptance": {
+    "DB-01": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + CLOUD_LIVE"
+    },
+    "DB-02": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + CLOUD_LIVE"
+    },
+    "DB-03": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + REST_BOOTSTRAP_LIVE; WS_LIVE_CLOSED_UNOBSERVED"
+    },
+    "DB-04": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + CLOUD_LIVE_RESTART"
+    },
+    "DB-05": {
+      "status": "PASS",
+      "evidence_scope": "UNIT"
+    },
+    "DB-06": {
+      "status": "PASS",
+      "evidence_scope": "UNIT"
+    },
+    "DB-07": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + REST_BOOTSTRAP_LIVE; NEW_RECOVERY_CANDLE_UNOBSERVED"
+    },
+    "DB-08": {
+      "status": "PASS",
+      "evidence_scope": "UNIT_FAILURE_INJECTION"
+    },
+    "DB-09": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + CLOUD_NORMAL_SHUTDOWN"
+    },
+    "DB-10": {
+      "status": "PASS",
+      "evidence_scope": "UNIT + CLOUD_BACKUP_RESTORE"
+    },
+    "DB-11": {
+      "status": "PASS",
+      "evidence_scope": "WINDOWS_HOSTED_CI_DEFAULT_PYTEST"
+    },
+    "DB-12": {
+      "status": "PASS",
+      "evidence_scope": "DEV_M01_M02_UNIT_REGRESSION"
+    },
+    "DB-13": {
+      "status": "PENDING_USER_EXECUTION",
+      "evidence_scope": "WINDOWS_LOCAL_LIVE_600_SECONDS_X2"
+    },
+    "DB-14": {
+      "status": "PASS",
+      "evidence_scope": "LINUX_WINDOWS_CI"
+    },
+    "DB-15": {
+      "status": "PASS",
+      "evidence_scope": "STATIC_SCAN + LOG_SCAN + UNIT"
+    }
+  },
+  "flags": [
+    "Windows local 600s x 2 live validation pending",
+    "WS_LIVE closed candle not observed",
+    "New REST_RECOVERY candle not observed live; recovery failure/continuity verified by unit tests",
+    "Unsaved price frames cannot be fully recovered"
+  ],
+  "verification_tool_cloud_smoke": {
+    "status": "LIVE_PASS_WITH_FLAGS",
+    "commit": "e56058f091b946f1e9c8da05103848f24b1b9295",
+    "execution_environment": "Linux",
+    "duration_per_run": 120.0,
+    "backup_restore": "PASS",
+    "restart_preservation": "PASS",
+    "duplicate_primary_keys": "NONE",
+    "secret_exposure_check": "PASS",
+    "source_unmodified": false,
+    "source_dirty_at_start": false,
+    "candle_sources": {
+      "REST_BOOTSTRAP": 126
+    },
+    "ws_closed_candle_live_observed": false,
+    "source_change_reason": "Concurrent documentation and shutdown-backlog implementation updates in this development task; not an unchanged-source validation",
+    "messages_received": [
+      452,
+      488
+    ]
+  },
+  "pull_request": {
+    "number": 4,
+    "url": "https://github.com/NAM-GOM/ai-multi-strategy-investment-system/pull/4",
+    "draft": true,
+    "base": "dev-m02-binance-websocket"
+  }
+}

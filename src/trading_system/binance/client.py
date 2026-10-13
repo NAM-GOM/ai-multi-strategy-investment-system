@@ -40,18 +40,22 @@ class BinanceError(RuntimeError):
         status: int | None = None,
         code: int | None = None,
         latency_ms: float | None = None,
+        restriction_reason: str | None = None,
     ) -> None:
         self.kind = kind
         self.endpoint = endpoint
         self.status = status
         self.code = code
         self.latency_ms = latency_ms
+        self.restriction_reason = restriction_reason
         # Do not include Binance's msg: remote responses may echo sensitive input.
         details = f"{kind} endpoint={endpoint}"
         if status is not None:
             details += f" HTTP={status}"
         if code is not None:
             details += f" BinanceCode={code}"
+        if restriction_reason is not None:
+            details += f" Restriction={restriction_reason}"
         super().__init__(details)
 
 
@@ -146,6 +150,7 @@ class BinanceClient:
         status: int | None = None
         code: int | None = None
         kind: str | None = None
+        restriction_reason: str | None = None
         data: Any = None
         try:
             response = self._http.get(f"{base_url}{endpoint}", params=query, headers=headers)
@@ -161,6 +166,13 @@ class BinanceClient:
                 kind = _error_kind(status, None)
             elif 300 <= status < 400:
                 kind = "http_redirect_rejected"
+            if status == 451:
+                message = data.get("msg", "") if isinstance(data, dict) else ""
+                restriction_reason = (
+                    "restricted_location"
+                    if isinstance(message, str) and "restricted location" in message.lower()
+                    else "unspecified_451"
+                )
         except httpx.TimeoutException:
             kind = "network_timeout"
         except httpx.RequestError:
@@ -171,7 +183,14 @@ class BinanceClient:
         symbol = request_params.get("symbol")
         symbol_label = symbol if symbol in ("BTCUSDT", "ETHUSDT", "SOLUSDT") else "-"
         if kind:
-            error = BinanceError(kind, endpoint, status=status, code=code, latency_ms=latency_ms)
+            error = BinanceError(
+                kind,
+                endpoint,
+                status=status,
+                code=code,
+                latency_ms=latency_ms,
+                restriction_reason=restriction_reason,
+            )
             logger.error(
                 "request failure symbol=%s latency_ms=%.3f exception=%s",
                 symbol_label,

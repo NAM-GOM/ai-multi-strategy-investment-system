@@ -1,0 +1,158 @@
+{
+  "status": "MR_W01_BASELINE_COMPLETE",
+  "base_commit": "574eb63597e42724a6450abd0928458ae72c4b88",
+  "preservation": {
+    "status": "PASS",
+    "unchanged_existing_files": 109,
+    "base_commit": "574eb63597e42724a6450abd0928458ae72c4b88"
+  },
+  "preflight": {
+    "status": "MR_W01_PREFLIGHT_PASS",
+    "gates": {
+      "P01": {
+        "tests": 8,
+        "status": "PASS"
+      },
+      "P02": {
+        "tests": 2,
+        "status": "PASS"
+      },
+      "P03": {
+        "tests": 3,
+        "status": "PASS"
+      },
+      "P04": {
+        "tests": 1,
+        "status": "PASS"
+      },
+      "P05": {
+        "tests": 2,
+        "status": "PASS"
+      },
+      "P06": {
+        "tests": 3,
+        "status": "PASS"
+      },
+      "P07": {
+        "tests": 2,
+        "status": "PASS"
+      },
+      "P08": {
+        "tests": 1,
+        "status": "PASS"
+      },
+      "P09": {
+        "tests": 1,
+        "status": "PASS"
+      },
+      "P10": {
+        "tests": 1,
+        "status": "PASS"
+      }
+    },
+    "passed": 24
+  },
+  "dataset": {
+    "historical_sha256": {
+      "BTCUSDT": "f4ddf0ec4354fe66f2635887a809e433962877b9b090a728a02d3721a0183059",
+      "ETHUSDT": "f0cda00c5f062f947c0175c911b8afb521a62d38d04d3f45c220a56d3e7002bb",
+      "SOLUSDT": "fe428dcdce137be444ab38f2c497651455173b4bbcbc2a5cdc75e386e1265187"
+    },
+    "w01_manifest_sha256": "474accf964da225cfb737d00b6b27c9f6d5c728c7180c2de00da3442492883a2",
+    "source_snapshot": {
+      "source": "https://data-api.binance.vision",
+      "server_time_ms": 1790945235462,
+      "cutoff_ms": 1790942400000,
+      "interval": "4h",
+      "market": "Binance Spot",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ]
+    },
+    "common_raw_start": "2020-08-11 04:00:00+00:00",
+    "evaluation_start_open": "2020-09-13 16:00:00+00:00",
+    "last_bar_open": "2026-10-02 08:00:00+00:00",
+    "evaluation_end_close": "2026-10-02 12:00:00+00:00",
+    "warmup_excluded": 201,
+    "common_bars_with_warmup": 13460,
+    "raw_page_reverification": "NOT_AVAILABLE_IN_REPOSITORY; verified existing clean CSV hashes"
+  },
+  "config": {
+    "initial_capital": 100000.0,
+    "risk_per_trade": 0.005,
+    "max_asset_allocation": 0.333,
+    "fee_bps": 10.0,
+    "slippage_bps": 5.0
+  },
+  "stop_atr_multiple": 2.5,
+  "parameters": {
+    "rsi_period": 14,
+    "rsi_entry": 30,
+    "rsi_exit": 50,
+    "atr_period": 20,
+    "ema_period": 200,
+    "bb_period": 20,
+    "bb_sigma": 2,
+    "std_ddof": 0,
+    "shock_return_bars": 3,
+    "shock_std_period": 60,
+    "shock_sigma": 2,
+    "wilder_seed": "SMA",
+    "ema_adjust": false
+  },
+  "entry_order": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "python": "3.14.7",
+  "pandas": "3.0.1",
+  "numpy": "2.3.5",
+  "reproducibility": "EXACT_RECOMPUTATION_PASS",
+  "accounting_audits": {
+    "meanrev_rsi_v0.1": {
+      "status": "PASS",
+      "trades_checked": 42,
+      "equity_rows": 13259
+    },
+    "meanrev_bollinger_v0.1": {
+      "status": "PASS",
+      "trades_checked": 300,
+      "equity_rows": 13259
+    },
+    "meanrev_shock_v0.1": {
+      "status": "PASS",
+      "trades_checked": 159,
+      "equity_rows": 13259
+    }
+  },
+  "code_sha256": {
+    "src/trading_system/research/mr_w01/__init__.py": "524c816f927d1e3c9edad3e644f8bff71d9d98489183c1f66308d02a68633444",
+    "src/trading_system/research/mr_w01/data.py": "8df8c895b51ecb879d1a35e7c79927744a351022d6967fa75eea3a7c1a20c86f",
+    "src/trading_system/research/mr_w01/engine.py": "8452be44a6b7b85d40d5cea763ca3419ded87f5c0ca237b5e9eebb9ff92b214a",
+    "src/trading_system/research/mr_w01/reporting.py": "40db4b44435afbb4283c5c7ada15b9f0e53e1f964eb19aaf0e718822470ee3c5",
+    "src/trading_system/research/mr_w01/run.py": "d5ec548c38a7bbe6f0bfb865c7fac92c98a2c8fb2958173221364b85703a5de7",
+    "src/trading_system/research/mr_w01/strategies.py": "b72182d5bff7f690f478dd46d52f4a6b23c2cc062c0a31f6f7a3b3182aa88082"
+  },
+  "test_sha256": "201646bc53b96434e52deb722f046556ac03b690d37444120e2eeddc3c7ed583",
+  "artifact_sha256": {
+    "MR-W01_charts/drawdown.svg": "0d18f51675c3d66d96988653816e4c704d3a075e27baa50d18de386387a7d28f",
+    "MR-W01_charts/equity.svg": "02c89af74b059aea79a4e715858d9505fe392656312135bc23f62f0de76eb2da",
+    "MR-W01_equity.csv": "76d0d0c09598ca15173855ba09730b95430b31cd3d0c531a3c7d121cc7f1bfd4",
+    "MR-W01_preflight.md": "dd0ceb028634dd3d8a4cd1c05c5d0e8d42bbc0703fefd141f15be04ee40db581",
+    "MR-W01_report.md": "7dc4f4f30fb1df20f03ebb723352158d2c43292cf769f611ce09468b12b9151a",
+    "MR-W01_signals.csv": "f948bfc4599c23ba61a07c6ec7f7e42b70c0f457bc1d7c802fc14a38f632f71a",
+    "MR-W01_summary.csv": "013b1e1fb74622ae312e9436bc8028878f9b87360d961fbefe733e0cd4783778",
+    "MR-W01_trades.csv": "8162028b85a84b7c688d334997e18e3bd5ef36ee78b12c95535cea82eeca5bd0",
+    "preflight-tests.txt": "875bf9b07f7d92acdf09d1b9eef0e954defe9e364746a827542fdb0c4429f54e",
+    "preflight-tests.xml": "c90e2720ae2ec93aae3864c265816b425b838f7dc60faceb49618e5f1ffbdc73",
+    "MR-W01_validation.json": "9c64fed26da36c45c74da2e2babd77478b307dab4dad57aaac4e5ff9538f3b04"
+  },
+  "classifications": {
+    "meanrev_rsi_v0.1": "NEGATIVE_DIAGNOSTIC",
+    "meanrev_bollinger_v0.1": "NEGATIVE_DIAGNOSTIC",
+    "meanrev_shock_v0.1": "NEGATIVE_DIAGNOSTIC"
+  }
+}
